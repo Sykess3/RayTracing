@@ -116,19 +116,19 @@ void Renderer::ClearAccumulationData()
 	memset(m_AccumulationData, 0, m_FinalImage->GetWidth() * m_FinalImage->GetHeight() * sizeof(glm::vec4));
 }
 
-void Renderer::Metal(const Scene& activeScene, Ray& inOutRay,  const Renderer::HitPayload& payload, glm::vec3& contribution)
+void Renderer::Metal(const Scene& activeScene, Ray& inOutRay,  const Renderer::HitPayload& payload, glm::vec3& contribution, uint32_t& seed)
 {
 	glm::vec3 reflected = glm::reflect(inOutRay.Direction, payload.WorldNormal);
 	const Material& hitMaterial = activeScene.Materials[payload.ObjectIndex];
-	reflected = glm::normalize(reflected) + (hitMaterial.Fuzzy * Walnut::Random::InUnitSphere());
+	reflected = glm::normalize(reflected) + (hitMaterial.Fuzzy * Utils::Random::Fast::InUnitSphereRef(seed));
 	inOutRay.Direction = reflected;
 	inOutRay.Origin = payload.WorldPosition;
 	contribution = hitMaterial.Albedo;
 }
 
-void Renderer::Lambertian(const Scene& activeScene, Ray& inOutRay, const Renderer::HitPayload& payload, glm::vec3& contribution) 
+void Renderer::Lambertian(const Scene& activeScene, Ray& inOutRay, const Renderer::HitPayload& payload, glm::vec3& contribution, uint32_t& seed)
 {
-	glm::vec3 direction = payload.WorldNormal * Walnut::Random::InUnitSphere();
+	glm::vec3 direction = payload.WorldNormal * Utils::Random::Fast::InUnitSphereRef(seed);
 	if (Utils::Math::IsNearZero(direction))
 	{
 		direction = payload.WorldNormal;
@@ -150,7 +150,7 @@ static double Reflectance(double cosine, double refraction_index) {
 
 
 
-void Renderer::Dielectric(const Scene& activeScene, Ray& inOutRay, const HitPayload& payload, glm::vec3& contribution)
+void Renderer::Dielectric(const Scene& activeScene, Ray& inOutRay, const HitPayload& payload, glm::vec3& contribution, uint32_t& seed)
 {
 	const Material& hitMaterial = activeScene.Materials[payload.ObjectIndex];
 
@@ -165,7 +165,7 @@ void Renderer::Dielectric(const Scene& activeScene, Ray& inOutRay, const HitPayl
 
 	glm::vec3 direction;
 
-	if (cannot_refract || Reflectance(cos_theta, refactionIndex) > Walnut::Random::Float())
+	if (cannot_refract || Reflectance(cos_theta, refactionIndex) > Utils::Random::Fast::FloatRef(seed))
 		direction = reflect(normalizedHitRayDirection, payload.WorldNormal);
 	else
 		direction = glm::refract(normalizedHitRayDirection, payload.WorldNormal, refactionIndex);
@@ -178,14 +178,22 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 {
 	Ray ray;
 	ray.Origin = m_ActiveCamera->GetPosition();
-	ray.Direction = m_ActiveCamera->GetRayDirections()[x + y * m_FinalImage->GetWidth()];
+	int PixedId = x + y * m_FinalImage->GetWidth();
+	ray.Direction = m_ActiveCamera->GetRayDirections()[PixedId];
 	
 	glm::vec3 contribution(1.0f);
 
+	if (PixedId == 156)
+	{
+		int a = 5;
+	}
+
 	int bounces = 5;
+	uint32_t traceSeed = PixedId * m_FrameIndex;
 	float attenuationPerBounce = 0.7;
 	for (int i = 0; i < bounces; i++)
 	{
+		traceSeed += i;
 		Renderer::HitPayload payload = TraceRay(ray);
 		if (payload.HitDistance < 0.0f)
 		{
@@ -200,13 +208,13 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 		switch (material.Type)
 		{
 		case Material::Type::Lambertian:
-			Lambertian(*m_ActiveScene, ray, payload, contributionScatteredFromTrace);
+			Lambertian(*m_ActiveScene, ray, payload, contributionScatteredFromTrace, traceSeed);
 			break;
 		case Material::Type::Metalic:
-			Metal(*m_ActiveScene, ray, payload, contributionScatteredFromTrace);
+			Metal(*m_ActiveScene, ray, payload, contributionScatteredFromTrace, traceSeed);
 			break;
 		case Material::Type::Dielectric:
-			Dielectric(*m_ActiveScene, ray, payload, contributionScatteredFromTrace);
+			Dielectric(*m_ActiveScene, ray, payload, contributionScatteredFromTrace, traceSeed);
 			break;
 		}
 
@@ -215,7 +223,7 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 		ray.Origin = payload.WorldPosition + payload.WorldNormal * 0.0001f;
 		//ray.Direction = glm::reflect(ray.Direction,
 		//	payload.WorldNormal + material.Roughness * Walnut::Random::Vec3(-0.5f, 0.5f));
-		ray.Direction = glm::normalize(payload.WorldNormal + Walnut::Random::InUnitSphere());
+		ray.Direction = glm::normalize(payload.WorldNormal + Utils::Random::Fast::InUnitSphereRef(traceSeed));
 	}
 
 	return glm::vec4(contribution, 1.0f);
