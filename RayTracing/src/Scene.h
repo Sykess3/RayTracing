@@ -4,15 +4,21 @@
 
 #include <vector>
 
+
 struct Material
 {
-	glm::vec3 Albedo{ 1.0f };
-	float Roughness = 1.0f;
-	float Metallic = 0.0f;
-	glm::vec3 EmissionColor{ 0.0f };
-	float EmissionPower = 0.0f;
+	enum class Type
+	{
+		Lambertian,
+		Metalic,
+		Dielectric
+	};
 
-	glm::vec3 GetEmission() const { return EmissionColor * EmissionPower; }
+	glm::vec3 Albedo{ 1.0f };
+	float Fuzzy;
+	float RefactionIndex;
+
+	Type Type = Type::Lambertian;
 };
 
 struct Sphere

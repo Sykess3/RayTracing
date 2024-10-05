@@ -39,6 +39,7 @@ void Renderer::OnResize(uint32_t width, uint32_t height)
 
 	delete[] m_AccumulationData;
 	m_AccumulationData = new glm::vec4[width * height];
+	ClearAccumulationData();
 
 	m_ImageHorizontalIter.resize(width);
 	m_ImageVerticalIter.resize(height);
@@ -54,20 +55,29 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 	m_ActiveCamera = &camera;
 	
 	if (m_FrameIndex == 1)
-		memset(m_AccumulationData, 0, m_FinalImage->GetWidth() * m_FinalImage->GetHeight() * sizeof(glm::vec4));
+		ClearAccumulationData();
+
 
 #define MT 1
 #if MT
 	std::for_each(std::execution::par, m_ImageVerticalIter.begin(), m_ImageVerticalIter.end(),
 		[this](uint32_t y)
 		{
-			std::for_each(std::execution::par, m_ImageHorizontalIter.begin(), m_ImageHorizontalIter.end(),
+			std::for_each(m_ImageHorizontalIter.begin(), m_ImageHorizontalIter.end(),
 				[this, y](uint32_t x)
 				{
 					glm::vec4 color = PerPixel(x, y);
+					if (color.x < 0)
+					{
+						int a = 6;
+					}
 					m_AccumulationData[x + y * m_FinalImage->GetWidth()] += color;
 
 					glm::vec4 accumulatedColor = m_AccumulationData[x + y * m_FinalImage->GetWidth()];
+					if (accumulatedColor.x < 0)
+					{
+						int a = 5;
+					}
 					accumulatedColor /= (float)m_FrameIndex;
 
 					accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0.0f), glm::vec4(1.0f));
@@ -101,31 +111,106 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 		m_FrameIndex = 1;
 }
 
+void Renderer::ClearAccumulationData()
+{
+	memset(m_AccumulationData, 0, m_FinalImage->GetWidth() * m_FinalImage->GetHeight() * sizeof(glm::vec4));
+}
+
+void Renderer::Metal(const Scene& activeScene, Ray& inOutRay,  const Renderer::HitPayload& payload, glm::vec3& contribution)
+{
+	glm::vec3 reflected = glm::reflect(inOutRay.Direction, payload.WorldNormal);
+	const Material& hitMaterial = activeScene.Materials[payload.ObjectIndex];
+	reflected = glm::normalize(reflected) + (hitMaterial.Fuzzy * Walnut::Random::InUnitSphere());
+	inOutRay.Direction = reflected;
+	inOutRay.Origin = payload.WorldPosition;
+	contribution = hitMaterial.Albedo;
+}
+
+void Renderer::Lambertian(const Scene& activeScene, Ray& inOutRay, const Renderer::HitPayload& payload, glm::vec3& contribution) 
+{
+	glm::vec3 direction = payload.WorldNormal * Walnut::Random::InUnitSphere();
+	if (Utils::Math::IsNearZero(direction))
+	{
+		direction = payload.WorldNormal;
+	}
+
+	const Material& hitMaterial = activeScene.Materials[payload.ObjectIndex];
+
+	inOutRay.Origin = payload.WorldPosition;
+	inOutRay.Direction = direction;
+	contribution = hitMaterial.Albedo;
+}
+
+static double Reflectance(double cosine, double refraction_index) {
+	// Use Schlick's approximation for reflectance.
+	auto r0 = (1 - refraction_index) / (1 + refraction_index);
+	r0 = r0 * r0;
+	return r0 + (1 - r0) * std::pow((1 - cosine), 5);
+}
+
+
+
+void Renderer::Dielectric(const Scene& activeScene, Ray& inOutRay, const HitPayload& payload, glm::vec3& contribution)
+{
+	const Material& hitMaterial = activeScene.Materials[payload.ObjectIndex];
+
+	contribution = glm::vec3(1.0f);
+	float refactionIndex = 1 / hitMaterial.RefactionIndex;
+
+	auto normalizedHitRayDirection = glm::normalize(inOutRay.Direction);
+	double cos_theta = std::fmin(dot(-normalizedHitRayDirection, payload.WorldNormal), 1.0);
+	double sin_theta = std::sqrt(1.0 - cos_theta * cos_theta);
+
+	bool cannot_refract = refactionIndex * sin_theta > 1.0;
+
+	glm::vec3 direction;
+
+	if (cannot_refract || Reflectance(cos_theta, refactionIndex) > Walnut::Random::Float())
+		direction = reflect(normalizedHitRayDirection, payload.WorldNormal);
+	else
+		direction = glm::refract(normalizedHitRayDirection, payload.WorldNormal, refactionIndex);
+
+	inOutRay.Direction = direction;
+	inOutRay.Origin = payload.WorldPosition;
+}
+
 glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 {
 	Ray ray;
 	ray.Origin = m_ActiveCamera->GetPosition();
 	ray.Direction = m_ActiveCamera->GetRayDirections()[x + y * m_FinalImage->GetWidth()];
 	
-	glm::vec3 light(0.0f);
 	glm::vec3 contribution(1.0f);
 
 	int bounces = 5;
+	float attenuationPerBounce = 0.7;
 	for (int i = 0; i < bounces; i++)
 	{
 		Renderer::HitPayload payload = TraceRay(ray);
 		if (payload.HitDistance < 0.0f)
 		{
-			glm::vec3 skyColor = glm::vec3(0.6f, 0.7f, 0.9f);
+			contribution *= glm::vec3(0.6f, 0.7f, 0.9f);
 			//light += skyColor * contribution;
 			break;
 		}
-
 		const Sphere& sphere = m_ActiveScene->Spheres[payload.ObjectIndex];
 		const Material& material = m_ActiveScene->Materials[sphere.MaterialIndex];
 
-		contribution *= material.Albedo;
-		light += material.GetEmission();
+		glm::vec3 contributionScatteredFromTrace(1.0f);
+		switch (material.Type)
+		{
+		case Material::Type::Lambertian:
+			Lambertian(*m_ActiveScene, ray, payload, contributionScatteredFromTrace);
+			break;
+		case Material::Type::Metalic:
+			Metal(*m_ActiveScene, ray, payload, contributionScatteredFromTrace);
+			break;
+		case Material::Type::Dielectric:
+			Dielectric(*m_ActiveScene, ray, payload, contributionScatteredFromTrace);
+			break;
+		}
+
+		contribution *= contributionScatteredFromTrace * attenuationPerBounce;
 
 		ray.Origin = payload.WorldPosition + payload.WorldNormal * 0.0001f;
 		//ray.Direction = glm::reflect(ray.Direction,
@@ -133,7 +218,7 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 		ray.Direction = glm::normalize(payload.WorldNormal + Walnut::Random::InUnitSphere());
 	}
 
-	return glm::vec4(light, 1.0f);
+	return glm::vec4(contribution, 1.0f);
 }
 
 Renderer::HitPayload Renderer::TraceRay(const Ray& ray)

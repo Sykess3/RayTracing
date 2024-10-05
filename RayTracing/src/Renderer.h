@@ -5,6 +5,7 @@
 #include "Camera.h"
 #include "Ray.h"
 #include "Scene.h"
+#include "Utils.h"
 
 #include <memory>
 #include <glm/glm.hpp>
@@ -22,11 +23,15 @@ public:
 	void OnResize(uint32_t width, uint32_t height);
 	void Render(const Scene& scene, const Camera& camera);
 
+
 	std::shared_ptr<Walnut::Image> GetFinalImage() const { return m_FinalImage; }
 
 	void ResetFrameIndex() { m_FrameIndex = 1; }
 	Settings& GetSettings() { return m_Settings; }
 private:
+	void ClearAccumulationData();
+private:
+
 	struct HitPayload
 	{
 		float HitDistance;
@@ -35,6 +40,10 @@ private:
 
 		int ObjectIndex;
 	};
+
+	void Metal(const Scene& activeScene, Ray& inOutRay, const Renderer::HitPayload& payload, glm::vec3& contribution);
+	void Lambertian(const Scene& activeScene, Ray& inOutRay, const Renderer::HitPayload& payload, glm::vec3& contribution);
+	void Dielectric(const Scene& activeScene, Ray& inOutRay, const Renderer::HitPayload& payload, glm::vec3& contribution);
 
 	glm::vec4 PerPixel(uint32_t x, uint32_t y); // RayGen
 
