@@ -119,9 +119,9 @@ void Renderer::ClearAccumulationData()
 void Renderer::Metal(const Scene& activeScene, Ray& inOutRay,  const Renderer::HitPayload& payload, glm::vec3& contribution, uint32_t& seed)
 {
 	glm::vec3 reflected = glm::reflect(inOutRay.Direction, payload.WorldNormal);
-	const Material& hitMaterial = activeScene.Materials[payload.ObjectIndex];
+	const Material& hitMaterial = activeScene.GetMaterial(payload.ObjectIndex);
 	reflected = glm::normalize(reflected) + (hitMaterial.Fuzzy * Utils::Random::Fast::InUnitSphereRef(seed));
-	inOutRay.Direction = reflected;
+	inOutRay.Direction = glm::normalize(reflected);
 	contribution = hitMaterial.Albedo;
 }
 
@@ -133,7 +133,7 @@ void Renderer::Lambertian(const Scene& activeScene, Ray& inOutRay, const Rendere
 		direction = payload.WorldNormal;
 	}
 
-	const Material& hitMaterial = activeScene.Materials[payload.ObjectIndex];
+	const Material& hitMaterial = activeScene.GetMaterial(payload.ObjectIndex);
 
 	inOutRay.Direction = direction;
 	contribution = hitMaterial.Albedo;
@@ -150,7 +150,7 @@ static double Reflectance(double cosine, double refraction_index) {
 
 void Renderer::Dielectric(const Scene& activeScene, Ray& inOutRay, const HitPayload& payload, glm::vec3& contribution, uint32_t& seed)
 {
-	const Material& hitMaterial = activeScene.Materials[payload.ObjectIndex];
+	const Material& hitMaterial = activeScene.GetMaterial(payload.ObjectIndex);
 
 	contribution = glm::vec3(1.0f);
 	float refactionIndex = 1 / hitMaterial.RefactionIndex;

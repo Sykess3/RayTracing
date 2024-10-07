@@ -33,4 +33,10 @@ struct Scene
 {
 	std::vector<Sphere> Spheres;
 	std::vector<Material> Materials;
+
+	const Material& GetMaterial(int objectIndex) const 
+	{
+		int materialIndex = Spheres[objectIndex].MaterialIndex;
+		return Materials[materialIndex];
+	}
 };
