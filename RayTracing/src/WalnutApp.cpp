@@ -19,11 +19,18 @@ public:
 	{
 		Material& pinkSphere = m_Scene.Materials.emplace_back();
 		pinkSphere.Albedo = { 1.0f, 0.0f, 1.0f };
-		pinkSphere.Type = Material::Type::Lambertian;
+		pinkSphere.Fuzzy = 0.1f;
+		pinkSphere.Type = Material::Type::Metalic;
 
 		Material& blueSphere = m_Scene.Materials.emplace_back();
 		blueSphere.Albedo = { 0.2f, 0.3f, 1.0f };
-		pinkSphere.Type = Material::Type::Lambertian;
+		pinkSphere.Fuzzy = 0.1f;
+		pinkSphere.Type = Material::Type::Metalic;
+
+		Material& TestSphere = m_Scene.Materials.emplace_back();
+		TestSphere.Albedo = { 1.0f, 1.0f, 1.0f };
+		TestSphere.RefactionIndex = 0.99f;
+		TestSphere.Type = Material::Type::Dielectric;
 
 		Material& orangeSphere = m_Scene.Materials.emplace_back();
 		orangeSphere.Albedo = { 0.8f, 0.5f, 0.2f };
@@ -49,7 +56,7 @@ public:
 			Sphere sphere;
 			sphere.Position = { 0.0f, -101.0f, 0.0f };
 			sphere.Radius = 100.0f;
-			sphere.MaterialIndex = 1;
+			sphere.MaterialIndex = 3;
 			m_Scene.Spheres.push_back(sphere);
 		}
 	}

@@ -1,7 +1,7 @@
 #include "Renderer.h"
 
 #include "Walnut/Random.h"
-
+#include <glm/gtx/norm.hpp >
 #include <execution>
 
 namespace Utils {
@@ -122,6 +122,7 @@ void Renderer::Metal(const Scene& activeScene, Ray& inOutRay,  const Renderer::H
 	const Material& hitMaterial = activeScene.GetMaterial(payload.ObjectIndex);
 	reflected = glm::normalize(reflected) + (hitMaterial.Fuzzy * Utils::Random::Fast::InUnitSphereRef(seed));
 	inOutRay.Direction = glm::normalize(reflected);
+	inOutRay.Origin = payload.WorldPosition + payload.WorldNormal * 0.0001f;
 	contribution = hitMaterial.Albedo;
 }
 
@@ -136,37 +137,45 @@ void Renderer::Lambertian(const Scene& activeScene, Ray& inOutRay, const Rendere
 	const Material& hitMaterial = activeScene.GetMaterial(payload.ObjectIndex);
 
 	inOutRay.Direction = direction;
+	inOutRay.Origin = payload.WorldPosition + payload.WorldNormal * 0.0001f;
 	contribution = hitMaterial.Albedo;
 }
 
-static double Reflectance(double cosine, double refraction_index) {
+static float Reflectance(float cosine, float refraction_index) {
 	// Use Schlick's approximation for reflectance.
 	auto r0 = (1 - refraction_index) / (1 + refraction_index);
 	r0 = r0 * r0;
-	return r0 + (1 - r0) * std::pow((1 - cosine), 5);
+	return r0 + (1 - r0) * glm::pow((1 - cosine), 5);
 }
-
-
 
 void Renderer::Dielectric(const Scene& activeScene, Ray& inOutRay, const HitPayload& payload, glm::vec3& contribution, uint32_t& seed)
 {
 	const Material& hitMaterial = activeScene.GetMaterial(payload.ObjectIndex);
 
+	bool front_face = dot(inOutRay.Direction, payload.WorldNormal) < 0;
+	glm::vec3 correctNormal = front_face ? payload.WorldNormal : -payload.WorldNormal;
+
 	contribution = glm::vec3(1.0f);
-	float refactionIndex = 1 / hitMaterial.RefactionIndex;
+	float refactionIndex = front_face ? 1 / hitMaterial.RefactionIndex : hitMaterial.RefactionIndex;
 
 	auto normalizedHitRayDirection = glm::normalize(inOutRay.Direction);
-	double cos_theta = std::fmin(dot(-normalizedHitRayDirection, payload.WorldNormal), 1.0);
-	double sin_theta = std::sqrt(1.0 - cos_theta * cos_theta);
+	float cos_theta = glm::min(dot(-normalizedHitRayDirection, correctNormal), 1.0f);
+	float sin_theta = glm::sqrt(1.0 - cos_theta * cos_theta);
 
 	bool cannot_refract = refactionIndex * sin_theta > 1.0;
 
 	glm::vec3 direction;
-
+	
 	if (cannot_refract || Reflectance(cos_theta, refactionIndex) > Utils::Random::Fast::FloatRef(seed))
-		direction = reflect(normalizedHitRayDirection, payload.WorldNormal);
+	{
+		direction = reflect(normalizedHitRayDirection, correctNormal);
+	}
 	else
-		direction = glm::refract(normalizedHitRayDirection, payload.WorldNormal, refactionIndex);
+	{
+		direction = glm::refract(normalizedHitRayDirection, correctNormal, refactionIndex);
+	}
+
+	inOutRay.Origin = payload.WorldPosition + correctNormal * -0.0001f;
 
 	inOutRay.Direction = direction;
 }
@@ -180,7 +189,7 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 	
 	glm::vec3 contribution(1.0f);
 
-	int bounces = 5;
+	int bounces = 50;
 	uint32_t traceSeed = PixedId * m_FrameIndex;
 	float attenuationPerBounce = 0.7;
 	for (int i = 0; i < bounces; i++)
@@ -190,7 +199,6 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 		if (payload.HitDistance < 0.0f)
 		{
 			contribution *= glm::vec3(0.6f, 0.7f, 0.9f);
-			//light += skyColor * contribution;
 			break;
 		}
 		const Sphere& sphere = m_ActiveScene->Spheres[payload.ObjectIndex];
@@ -209,10 +217,15 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 			Dielectric(*m_ActiveScene, ray, payload, contributionScatteredFromTrace, traceSeed);
 			break;
 		}
+		float attenuation = attenuationPerBounce;
+		if (Material::Type::Dielectric == material.Type)
+		{
+			attenuation = 1.0f;
+		}
 
-		contribution *= contributionScatteredFromTrace * attenuationPerBounce;
+		//contribution *= contributionScatteredFromTrace * attenuationPerBounce
 
-		ray.Origin = payload.WorldPosition + payload.WorldNormal * 0.0001f;
+		contribution *= contributionScatteredFromTrace * attenuation;
 	}
 
 	return glm::vec4(contribution, 1.0f);

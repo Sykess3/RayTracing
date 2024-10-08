@@ -15,7 +15,9 @@ struct Material
 	};
 
 	glm::vec3 Albedo{ 1.0f };
+	// Metalic only
 	float Fuzzy;
+	// Dielectrict only
 	float RefactionIndex;
 
 	Type Type = Type::Lambertian;
