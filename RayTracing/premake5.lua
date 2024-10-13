@@ -9,14 +9,12 @@ project "RayTracing"
 
    includedirs
    {
+      "src",
       "../Walnut/vendor/imgui",
       "../Walnut/vendor/glfw/include",
       "../Walnut/vendor/glm",
-
       "../Walnut/Walnut/src",
-
       "../vendor/eventpp/include",
-
       "%{IncludeDir.VulkanSDK}",
    }
 

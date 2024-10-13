@@ -233,47 +233,13 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 
 Renderer::HitPayload Renderer::TraceRay(const Ray& ray)
 {
-	// (bx^2 + by^2)t^2 + (2(axbx + ayby))t + (ax^2 + ay^2 - r^2) = 0
-	// where
-	// a = ray origin
-	// b = ray direction
-	// r = radius
-	// t = hit distance
 
-	int closestSphere = -1;
-	float hitDistance = std::numeric_limits<float>::max();
-	for (size_t i = 0; i < m_ActiveScene->Spheres.size(); i++)
-	{
-		const Sphere& sphere = m_ActiveScene->Spheres[i];
-		glm::vec3 origin = ray.Origin - sphere.Position;
+	Scene::RayCastHit Hit = m_ActiveScene->RayCast(ray);
 
-		float a = glm::dot(ray.Direction, ray.Direction);
-		float b = 2.0f * glm::dot(origin, ray.Direction);
-		float c = glm::dot(origin, origin) - sphere.Radius * sphere.Radius;
-
-		// Quadratic forumula discriminant:
-		// b^2 - 4ac
-
-		float discriminant = b * b - 4.0f * a * c;
-		if (discriminant < 0.0f)
-			continue;
-
-		// Quadratic formula:
-		// (-b +- sqrt(discriminant)) / 2a
-
-		// float t0 = (-b + glm::sqrt(discriminant)) / (2.0f * a); // Second hit distance (currently unused)
-		float closestT = (-b - glm::sqrt(discriminant)) / (2.0f * a);
-		if (closestT > 0.0f && closestT < hitDistance)
-		{
-			hitDistance = closestT;
-			closestSphere = (int)i;
-		}
-	}
-
-	if (closestSphere < 0)
+	if (Hit.ObjectIndex < 0)
 		return Miss(ray);
 
-	return ClosestHit(ray, hitDistance, closestSphere);
+	return ClosestHit(ray, Hit.HitDistance, Hit.ObjectIndex);
 }
 
 Renderer::HitPayload Renderer::ClosestHit(const Ray& ray, float hitDistance, int objectIndex)
