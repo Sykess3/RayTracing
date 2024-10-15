@@ -3,6 +3,11 @@
 #include "Walnut/Layer.h"
 #include "imgui.h"
 #include "Engine.h"
+#include "eventpp/callbacklist.h"
+#include "Walnut/Input/KeyCodes.h"
+#include "glm/gtx/string_cast.hpp"
+#include "Viewport.h"
+
 #include <glm/gtc/type_ptr.hpp>
 
 class EditorApp : public Walnut::Layer
@@ -12,22 +17,21 @@ public:
 	EditorApp(std::shared_ptr<Engine> engine)
 		:m_Engine(engine)
 	{
-
+		OnViewport_LeftMouseClick.append(std::bind(&EditorApp::ViewportLeftMouseClick, this));
 	}
 
 	virtual void OnUpdate(float ts) override
 	{
-
+		if (Walnut::Input::IsMouseButtonDown(Walnut::MouseButton::Left))
+		{
+			OnViewport_LeftMouseClick();
+		}
 	}
 
 	virtual void OnUIRender() override
 	{
 		ImGui::Begin("Settings");
 		ImGui::Text("Last render: %.3fms", m_Engine->m_LastRenderTime);
-		/*if (ImGui::Button("Render"))
-		{
-			m_Engine->m_Renderer->Render(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
-		}*/
 
 		ImGui::Checkbox("Accumulate", &m_Engine->m_Renderer->GetSettings().Accumulate);
 
@@ -64,6 +68,29 @@ public:
 
 		ImGui::End();
 	}
+
+	void ViewportLeftMouseClick() 
+	{
+		ImGuiIO& IO = ImGui::GetIO();
+		glm::vec2 input = { IO.MousePos.x, IO.MousePos.y };
+	
+		Viewport& viewport = Viewport::Get();
+		if (viewport.IsWithin(input))
+		{
+			 glm::vec4 mouseClippedPos = viewport.GetClippedPosition(input);
+			
+			 glm::vec4 target = m_Engine->m_Camera->GetInverseProjection() * mouseClippedPos;
+			 glm::vec3 rayDirection = glm::vec3(m_Engine->m_Camera->GetInverseView() * glm::vec4(glm::normalize(glm::vec3(target) / target.w), 0));
+			 Ray ray;
+			 ray.Direction = rayDirection;
+			 ray.Origin = m_Engine->m_Camera->GetPosition();
+			 auto hit = m_Engine->m_Scene->RayCast(ray);
+			 std::cout << hit.ObjectIndex << std::endl;
+		}
+	}
+public:
+	eventpp::CallbackList<void()> OnViewport_LeftMouseClick;
+
 private:
 	std::shared_ptr<Engine> m_Engine;
 };

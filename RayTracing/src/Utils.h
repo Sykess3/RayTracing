@@ -1,6 +1,10 @@
 #pragma once
 
 #include "glm/glm.hpp"
+#include "Scene.h"
+#include <memory>
+
+class Camera;
 
 namespace Utils 
 {
