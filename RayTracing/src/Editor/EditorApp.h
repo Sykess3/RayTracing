@@ -18,19 +18,27 @@ public:
 	EditorApp(std::shared_ptr<Engine> engine)
 		:m_Engine(engine)
 	{
-		OnViewport_LeftMouseClick.append(std::bind(&EditorApp::ViewportLeftMouseClick, this));
+		OnViewport_LeftMouseClick.append(std::bind(&EditorApp::ViewportLeftMouseClick, this, std::placeholders::_1));
 	}
 
 	virtual void OnUpdate(float ts) override
 	{
 		if (Walnut::Input::IsMouseButtonDown(Walnut::MouseButton::Left))
 		{
-			OnViewport_LeftMouseClick();
+			ImGuiIO& IO = ImGui::GetIO();
+			glm::vec2 input = { IO.MousePos.x, IO.MousePos.y };
+
+			Viewport& viewport = Viewport::Get();
+			if (viewport.IsWithin(input)) 
+			{
+				OnViewport_LeftMouseClick(input);
+			}
 		}
 	}
 
 	virtual void OnUIRender() override
 	{
+		ImGui::ShowDemoWindow();
 		ImGui::Begin("Settings");
 		ImGui::Text("Last render: %.3fms", m_Engine->m_LastRenderTime);
 
@@ -73,7 +81,7 @@ public:
 				{
 					case Material::EType::Dielectric:
 					{
-						bDirty |= ImGui::DragFloat("RefractionIndex", &selectedMaterial.RefactionIndex, 0.001f);
+						bDirty |= ImGui::DragFloat("Refraction Index", &selectedMaterial.RefactionIndex, 0.001f);
 						break;
 					}
 					case Material::EType::Lambertian:
@@ -98,27 +106,21 @@ public:
 		ImGui::End();
 	}
 
-	void ViewportLeftMouseClick() 
+	void ViewportLeftMouseClick(const glm::vec2& input)
 	{
-		ImGuiIO& IO = ImGui::GetIO();
-		glm::vec2 input = { IO.MousePos.x, IO.MousePos.y };
-	
 		Viewport& viewport = Viewport::Get();
-		if (viewport.IsWithin(input))
-		{
-			 glm::vec4 mouseClippedPos = viewport.GetClippedPosition(input);
-			
-			 glm::vec4 target = m_Engine->m_Camera->GetInverseProjection() * mouseClippedPos;
-			 glm::vec3 rayDirection = glm::vec3(m_Engine->m_Camera->GetInverseView() * glm::vec4(glm::normalize(glm::vec3(target) / target.w), 0));
-			 Ray ray;
-			 ray.Direction = rayDirection;
-			 ray.Origin = m_Engine->m_Camera->GetPosition();
-			 auto hit = m_Engine->m_Scene->RayCast(ray);
-			 m_SelectedObjectIndex = hit.ObjectIndex;
-		}
+		glm::vec4 mouseClippedPos = viewport.GetClippedPosition(input);
+
+		glm::vec4 target = m_Engine->m_Camera->GetInverseProjection() * mouseClippedPos;
+		glm::vec3 rayDirection = glm::vec3(m_Engine->m_Camera->GetInverseView() * glm::vec4(glm::normalize(glm::vec3(target) / target.w), 0));
+		Ray ray;
+		ray.Direction = rayDirection;
+		ray.Origin = m_Engine->m_Camera->GetPosition();
+		auto hit = m_Engine->m_Scene->RayCast(ray);
+		m_SelectedObjectIndex = hit.ObjectIndex;
 	}
 public:
-	eventpp::CallbackList<void()> OnViewport_LeftMouseClick;
+	eventpp::CallbackList<void(const glm::vec2&)> OnViewport_LeftMouseClick;
 
 private:
 	std::shared_ptr<Engine> m_Engine;
