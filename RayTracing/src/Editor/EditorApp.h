@@ -9,6 +9,7 @@
 #include "Viewport.h"
 
 #include <glm/gtc/type_ptr.hpp>
+#include <memory>
 
 class EditorApp : public Walnut::Layer
 {
@@ -41,29 +42,57 @@ public:
 		ImGui::End();
 
 		ImGui::Begin("Scene");
-		for (size_t i = 0; i < m_Engine->m_Scene->Spheres.size(); i++)
+		bool bDirty = false;
+		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
+		if (m_SelectedObjectIndex >= 0)
 		{
-			ImGui::PushID(i);
+			auto& scene = m_Engine->m_Scene;
+			Sphere& selectedObject = scene->GetObject_Mutable(m_SelectedObjectIndex);
+			Material& selectedMaterial = scene->GetMaterial_Mutable(m_SelectedObjectIndex);
+			if (ImGui::TreeNodeEx("Sphere", flags)) 
+			{
+				bDirty |= ImGui::DragFloat3("Position", glm::value_ptr(selectedObject.Position), 0.1f);
+				bDirty |= ImGui::DragFloat("Radius", &selectedObject.Radius, 0.1f);
+				bDirty |= ImGui::DragInt("Material", &selectedObject.MaterialIndex, 1.0f, 0, (int)m_Engine->m_Scene->Materials.size() - 1);
+				ImGui::TreePop();
+			}
+			if (ImGui::TreeNodeEx("Material", flags))
+			{
+				{
+					const std::array<const char*, Material::ETypeCount>& enumChars = GetAllArrChars<Material::EType, Material::ETypeCount>();
+					int currentType = static_cast<int>(selectedMaterial.Type);
+					if (ImGui::Combo("Material Type", &currentType, enumChars.data(), enumChars.size()))
+					{
+						bDirty |= true;
+						selectedMaterial.Type = static_cast<Material::EType>(currentType);
+					}
 
-			Sphere& sphere = m_Engine->m_Scene->Spheres[i];
-			ImGui::DragFloat3("Position", glm::value_ptr(sphere.Position), 0.1f);
-			ImGui::DragFloat("Radius", &sphere.Radius, 0.1f);
-			ImGui::DragInt("Material", &sphere.MaterialIndex, 1.0f, 0, (int)m_Engine->m_Scene->Materials.size() - 1);
+				}
+				bDirty |= ImGui::ColorEdit3("Albedo", glm::value_ptr(selectedMaterial.Albedo));
+				switch (selectedMaterial.Type)
+				{
+					case Material::EType::Dielectric:
+					{
+						bDirty |= ImGui::DragFloat("RefractionIndex", &selectedMaterial.RefactionIndex, 0.001f);
+						break;
+					}
+					case Material::EType::Lambertian:
+					{
+						break;
+					}
+					case Material::EType::Metalic:
+					{
+						bDirty |= ImGui::DragFloat("Fuzzy", &selectedMaterial.Fuzzy, 0.001f);
 
-			ImGui::Separator();
-
-			ImGui::PopID();
+						break;
+					}
+				}
+				ImGui::TreePop();
+			}
 		}
-
-		for (size_t i = 0; i < m_Engine->m_Scene->Materials.size(); i++)
+		if (bDirty)
 		{
-			ImGui::PushID(i);
-
-			Material& material = m_Engine->m_Scene->Materials[i];
-			ImGui::ColorEdit3("Albedo", glm::value_ptr(material.Albedo));
-			ImGui::Separator();
-
-			ImGui::PopID();
+			m_Engine->m_Renderer->ResetFrameIndex();
 		}
 
 		ImGui::End();
@@ -85,7 +114,7 @@ public:
 			 ray.Direction = rayDirection;
 			 ray.Origin = m_Engine->m_Camera->GetPosition();
 			 auto hit = m_Engine->m_Scene->RayCast(ray);
-			 std::cout << hit.ObjectIndex << std::endl;
+			 m_SelectedObjectIndex = hit.ObjectIndex;
 		}
 	}
 public:
@@ -93,4 +122,5 @@ public:
 
 private:
 	std::shared_ptr<Engine> m_Engine;
+	int m_SelectedObjectIndex = -1;
 };

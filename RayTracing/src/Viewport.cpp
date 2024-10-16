@@ -18,21 +18,21 @@ Viewport::Viewport(std::shared_ptr<Engine> inEngine)
 	Material& pinkSphere = m_Engine->m_Scene->Materials.emplace_back();
 	pinkSphere.Albedo = { 1.0f, 0.0f, 1.0f };
 	pinkSphere.Fuzzy = 0.1f;
-	pinkSphere.Type = Material::Type::Metalic;
+	pinkSphere.Type = Material::EType::Metalic;
 
 	Material& blueSphere = m_Engine->m_Scene->Materials.emplace_back();
 	blueSphere.Albedo = { 0.2f, 0.3f, 1.0f };
 	pinkSphere.Fuzzy = 0.1f;
-	pinkSphere.Type = Material::Type::Metalic;
+	pinkSphere.Type = Material::EType::Metalic;
 
 	Material& TestSphere = m_Engine->m_Scene->Materials.emplace_back();
 	TestSphere.Albedo = { 1.0f, 1.0f, 1.0f };
 	TestSphere.RefactionIndex = 0.99f;
-	TestSphere.Type = Material::Type::Dielectric;
+	TestSphere.Type = Material::EType::Dielectric;
 
 	Material& orangeSphere = m_Engine->m_Scene->Materials.emplace_back();
 	orangeSphere.Albedo = { 0.8f, 0.5f, 0.2f };
-	pinkSphere.Type = Material::Type::Lambertian;
+	pinkSphere.Type = Material::EType::Lambertian;
 
 	{
 		Sphere sphere;

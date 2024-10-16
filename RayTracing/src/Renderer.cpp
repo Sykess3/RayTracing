@@ -207,18 +207,18 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 		glm::vec3 contributionScatteredFromTrace(1.0f);
 		switch (material.Type)
 		{
-		case Material::Type::Lambertian:
+		case Material::EType::Lambertian:
 			Lambertian(*m_ActiveScene, ray, payload, contributionScatteredFromTrace, traceSeed);
 			break;
-		case Material::Type::Metalic:
+		case Material::EType::Metalic:
 			Metal(*m_ActiveScene, ray, payload, contributionScatteredFromTrace, traceSeed);
 			break;
-		case Material::Type::Dielectric:
+		case Material::EType::Dielectric:
 			Dielectric(*m_ActiveScene, ray, payload, contributionScatteredFromTrace, traceSeed);
 			break;
 		}
 		float attenuation = attenuationPerBounce;
-		if (Material::Type::Dielectric == material.Type)
+		if (Material::EType::Dielectric == material.Type)
 		{
 			attenuation = 1.0f;
 		}

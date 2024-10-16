@@ -3,16 +3,27 @@
 #include <glm/glm.hpp>
 #include "Ray.h"
 #include <vector>
+#include <array>
 
+template <typename T, int Count>
+inline const std::array<const char*, Count>& GetAllArrChars() {
+	static_assert(false);
+
+	static const std::array<const char*, Count> empty{};
+	return empty;
+}
 
 struct Material
 {
-	enum class Type
+	enum class EType
 	{
 		Lambertian,
 		Metalic,
-		Dielectric
+		Dielectric,
+		MAX
 	};
+
+	static constexpr int ETypeCount = static_cast<int>(Material::EType::MAX);
 
 	glm::vec3 Albedo{ 1.0f };
 	// Metalic only
@@ -20,8 +31,28 @@ struct Material
 	// Dielectrict only
 	float RefactionIndex = 0.0f;
 
-	Type Type = Type::Lambertian;
+	EType Type = EType::Lambertian;
 };
+
+template <>
+inline const std::array<const char*, Material::ETypeCount>& GetAllArrChars<Material::EType, Material::ETypeCount>() {
+    static const std::array<const char*, Material::ETypeCount> typeNames = { "Lambertian", "Metalic", "Dielectric" };
+	return typeNames;
+}
+
+inline const char* EnumToChar(Material::EType t) {
+	switch (t)
+	{
+	default: assert(false);
+		return "InvalidEnumStr";
+	case Material::EType::Lambertian:
+		return "Lambertian";
+	case Material::EType::Metalic:
+		return "Metalic";
+	case Material::EType::Dielectric:
+		return "Dielectric";
+	}
+}
 
 struct Sphere
 {
@@ -42,9 +73,19 @@ struct Scene
 		return Materials[materialIndex];
 	}
 
+	inline Material& GetMaterial_Mutable(int objectIndex) 
+	{
+		return const_cast<Material&>(GetMaterial(objectIndex));
+
+	}
+
 	inline const Sphere& GetObject(int objectIndex) const 
 	{
 		return Spheres[objectIndex];
+	}
+	inline Sphere& GetObject_Mutable(int objectIndex)
+	{
+		return const_cast<Sphere&>(GetObject(objectIndex));
 	}
 
 	struct RayCastHit 
