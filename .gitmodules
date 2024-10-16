@@ -4,3 +4,6 @@
 [submodule "vendor/eventpp"]
 	path = vendor/eventpp
 	url = https://github.com/wqking/eventpp.git
+[submodule "vendor/yas"]
+	path = vendor/yas
+	url = https://github.com/niXman/yas.git

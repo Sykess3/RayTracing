@@ -15,6 +15,7 @@ project "RayTracing"
       "../Walnut/vendor/glm",
       "../Walnut/Walnut/src",
       "../vendor/eventpp/include",
+      "../vendor/yas/include",
       "%{IncludeDir.VulkanSDK}",
    }
 
