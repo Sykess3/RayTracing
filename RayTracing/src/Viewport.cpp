@@ -13,8 +13,8 @@ Viewport& Viewport::Get()
 Viewport::Viewport(std::shared_ptr<Engine> inEngine)
 	: m_Engine(inEngine)
 {
-
 	s_Instance = this;
+
 	Material& pinkSphere = m_Engine->m_Scene->Materials.emplace_back();
 	pinkSphere.Albedo = { 1.0f, 0.0f, 1.0f };
 	pinkSphere.Fuzzy = 0.1f;
@@ -48,6 +48,12 @@ Viewport::Viewport(std::shared_ptr<Engine> inEngine)
 		sphere.Radius = 1.0f;
 		sphere.MaterialIndex = 2;
 		m_Engine->m_Scene->Spheres.push_back(sphere);
+
+		Sphere sphere2;
+		sphere2.Position = { -2.0f, 0.0f, 0.0f };
+		sphere2.Radius = 1.0f;
+		sphere2.MaterialIndex = 2;
+		m_Engine->m_Scene->Spheres.push_back(sphere2);
 	}
 
 	{

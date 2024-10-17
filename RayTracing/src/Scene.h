@@ -4,6 +4,7 @@
 #include "Ray.h"
 #include <vector>
 #include <array>
+#include <yas/serialize.hpp>
 
 template <typename T, int Count>
 inline const std::array<const char*, Count>& GetAllArrChars() {
@@ -22,6 +23,13 @@ struct Material
 		Dielectric,
 		MAX
 	};
+
+	YAS_DEFINE_STRUCT_SERIALIZE_NVP("Material",
+		("Albedo", Albedo),
+		("Fuzzy", Fuzzy),
+		("RefractionIndex", RefactionIndex),
+		("Type", Type))
+
 
 	static constexpr int ETypeCount = static_cast<int>(Material::EType::MAX);
 
@@ -60,12 +68,20 @@ struct Sphere
 	float Radius = 0.5f;
 
 	int MaterialIndex = 0;
+
+	YAS_DEFINE_STRUCT_SERIALIZE_NVP("Sphere",
+		("Position", Position),
+		("Radius", Radius),
+		("MaterialIndex", MaterialIndex))
 };
 
 struct Scene
 {
 	std::vector<Sphere> Spheres;
 	std::vector<Material> Materials;
+
+	YAS_DEFINE_STRUCT_SERIALIZE_NVP("Scene", ("Spheres", Spheres), ("Materials", Materials));
+
 
 	inline const Material& GetMaterial(int objectIndex) const 
 	{

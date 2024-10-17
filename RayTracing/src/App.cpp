@@ -5,6 +5,8 @@
 #include "Viewport.h"
 #include "Scene.h"
 #include <memory>
+#include "Camera.h"
+#include "AssetManager.h"
 
 
 
@@ -17,18 +19,30 @@ Walnut::Application* Walnut::CreateApplication(int argc, char** argv)
 	auto camera = std::make_shared<Camera>(45.0f, 0.1f, 100.0f);
 	auto scene = std::make_shared<Scene>();
 	auto renderer = std::make_shared<Renderer>();
-	auto engine = std::make_shared<Engine>(camera, scene, renderer);
+	auto assetManager = std::make_shared<AssetManager>();
+	auto engine = std::make_shared<Engine>(camera, scene, renderer, assetManager);
+
 
 	app->PushLayer(std::make_shared<EditorApp>(engine));
 	app->PushLayer(std::make_shared<Viewport>(engine));
 
-	app->SetMenubarCallback([app]()
+	app->SetMenubarCallback([app, engine]()
 		{
 			if (ImGui::BeginMenu("File"))
 			{
 				if (ImGui::MenuItem("Exit"))
 				{
 					app->Close();
+				}
+				else if (ImGui::MenuItem("Save scene")) 
+				{
+					engine->m_AssetManager->SaveJSON(engine->m_Scene, "Content\\Scenes\\testfile.json");
+				}
+				else if (ImGui::MenuItem("Load scene")) 
+				{
+					engine->m_AssetManager->LoadJSON(engine->m_Scene, "Content\\Scenes\\testfile.json");
+
+					engine->m_Renderer->ResetFrameIndex();
 				}
 				ImGui::EndMenu();
 			}
