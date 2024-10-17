@@ -12,6 +12,7 @@ CreateObjectPopup::CreateObjectPopup(const std::string& title, const std::string
 void CreateObjectPopup::OnApprove()
 {
 	m_engine->m_Scene->Spheres.push_back(m_editingObject);
+	m_engine->m_Renderer->ResetFrameIndex();
 }
 
 void CreateObjectPopup::OnCancel()
