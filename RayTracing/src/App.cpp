@@ -7,7 +7,9 @@
 #include <memory>
 #include "Camera.h"
 #include "AssetManager.h"
-
+#include "Editor/SaveScenePopup.h"
+#include "Editor/LoadScenePopup.h"
+#include "UIManager.h"
 
 
 Walnut::Application* Walnut::CreateApplication(int argc, char** argv)
@@ -22,7 +24,7 @@ Walnut::Application* Walnut::CreateApplication(int argc, char** argv)
 	auto assetManager = std::make_shared<AssetManager>();
 	auto engine = std::make_shared<Engine>(camera, scene, renderer, assetManager);
 
-
+	app->PushLayer<UIManager>();
 	app->PushLayer(std::make_shared<EditorApp>(engine));
 	app->PushLayer(std::make_shared<Viewport>(engine));
 
@@ -30,19 +32,17 @@ Walnut::Application* Walnut::CreateApplication(int argc, char** argv)
 		{
 			if (ImGui::BeginMenu("File"))
 			{
-				if (ImGui::MenuItem("Exit"))
+				UIManager& uiManager = UIManager::Get();
+				if (ImGui::MenuItem("Save scene")) 
 				{
-					app->Close();
-				}
-				else if (ImGui::MenuItem("Save scene")) 
-				{
-					engine->m_AssetManager->SaveJSON(engine->m_Scene, "Content\\Scenes\\testfile.json");
+					uiManager.ShowPopup("SaveScene", std::make_unique<SaveScenePopup>("Save scene", "Save", "Cancel", engine));
 				}
 				else if (ImGui::MenuItem("Load scene")) 
 				{
-					engine->m_AssetManager->LoadJSON(engine->m_Scene, "Content\\Scenes\\testfile.json");
+					uiManager.ShowPopup("LoadScene", std::make_unique<LoadScenePopup>("Load scene", "Load", "Cancel", engine));
+					//engine->m_AssetManager->LoadJSON(engine->m_Scene, "Content\\Scenes\\testfile.json");
 
-					engine->m_Renderer->ResetFrameIndex();
+					//engine->m_Renderer->ResetFrameIndex();
 				}
 				ImGui::EndMenu();
 			}
