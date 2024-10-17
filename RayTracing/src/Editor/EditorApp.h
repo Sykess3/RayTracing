@@ -38,7 +38,6 @@ public:
 
 	virtual void OnUIRender() override
 	{
-		ImGui::ShowDemoWindow();
 		ImGui::Begin("Settings");
 		ImGui::Text("Last render: %.3fms", m_Engine->m_LastRenderTime);
 
@@ -50,6 +49,21 @@ public:
 		ImGui::End();
 
 		ImGui::Begin("Scene");
+
+		for (int i = 0; i < m_Engine->m_Scene->Spheres.size(); ++i) 
+		{
+			ImGui::PushID(i);
+			if (ImGui::Selectable((std::string("Sphere") + std::to_string(i)).data()))
+			{
+				m_SelectedObjectIndex = i;
+			}
+			ImGui::PopID();
+		}
+
+
+		ImGui::End();
+
+		ImGui::Begin("Details");
 		bool bDirty = false;
 		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
 		if (m_SelectedObjectIndex >= 0)
