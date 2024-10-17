@@ -92,8 +92,8 @@ struct Scene
 	inline Material& GetMaterial_Mutable(int objectIndex) 
 	{
 		return const_cast<Material&>(GetMaterial(objectIndex));
-
 	}
+
 
 	inline const Sphere& GetObject(int objectIndex) const 
 	{
@@ -102,6 +102,14 @@ struct Scene
 	inline Sphere& GetObject_Mutable(int objectIndex)
 	{
 		return const_cast<Sphere&>(GetObject(objectIndex));
+	}
+
+	inline void Destroy(int objectIndex) 
+	{
+		if (objectIndex >= 0 && Spheres.size() > objectIndex)
+		{
+			Spheres.erase(Spheres.begin() + objectIndex);
+		}
 	}
 
 	struct RayCastHit 

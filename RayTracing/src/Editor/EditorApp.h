@@ -15,6 +15,54 @@ class EditorApp : public Walnut::Layer
 {
 
 public:
+
+	static void DrawDetailsOfObject(Sphere& selectedObject, bool& bDirty, std::shared_ptr<Scene> scene)
+	{
+		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
+		Material& selectedMaterial = scene->GetMaterial_Mutable(selectedObject.MaterialIndex);
+		if (ImGui::TreeNodeEx("Sphere", flags))
+		{
+			bDirty |= ImGui::DragFloat3("Position", glm::value_ptr(selectedObject.Position), 0.1f);
+			bDirty |= ImGui::DragFloat("Radius", &selectedObject.Radius, 0.1f);
+
+			bDirty |= ImGui::DragInt("Material", &selectedObject.MaterialIndex, 1.0f, 0, (int)scene->Materials.size() - 1);
+			ImGui::TreePop();
+		}
+		if (ImGui::TreeNodeEx("Material", flags))
+		{
+			{
+				const std::array<const char*, Material::ETypeCount>& enumChars = GetAllArrChars<Material::EType, Material::ETypeCount>();
+				int currentType = static_cast<int>(selectedMaterial.Type);
+				if (ImGui::Combo("Material Type", &currentType, enumChars.data(), enumChars.size()))
+				{
+					bDirty |= true;
+					selectedMaterial.Type = static_cast<Material::EType>(currentType);
+				}
+
+			}
+			bDirty |= ImGui::ColorEdit3("Albedo", glm::value_ptr(selectedMaterial.Albedo));
+			switch (selectedMaterial.Type)
+			{
+			case Material::EType::Dielectric:
+			{
+				bDirty |= ImGui::DragFloat("Refraction Index", &selectedMaterial.RefactionIndex, 0.001f);
+				break;
+			}
+			case Material::EType::Lambertian:
+			{
+				break;
+			}
+			case Material::EType::Metalic:
+			{
+				bDirty |= ImGui::DragFloat("Fuzzy", &selectedMaterial.Fuzzy, 0.001f);
+
+				break;
+			}
+			}
+			ImGui::TreePop();
+		}
+	}
+
 	EditorApp(std::shared_ptr<Engine> engine)
 		:m_Engine(engine)
 	{
@@ -53,63 +101,43 @@ public:
 		for (int i = 0; i < m_Engine->m_Scene->Spheres.size(); ++i) 
 		{
 			ImGui::PushID(i);
-			if (ImGui::Selectable((std::string("Sphere") + std::to_string(i)).data()))
+			if (ImGui::Selectable((std::string("Sphere") + std::to_string(i)).data(), m_SelectedObjectIndex == i))
 			{
 				m_SelectedObjectIndex = i;
 			}
 			ImGui::PopID();
 		}
 
-
 		ImGui::End();
 
 		ImGui::Begin("Details");
+
 		bool bDirty = false;
-		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
 		if (m_SelectedObjectIndex >= 0)
 		{
-			auto& scene = m_Engine->m_Scene;
-			Sphere& selectedObject = scene->GetObject_Mutable(m_SelectedObjectIndex);
-			Material& selectedMaterial = scene->GetMaterial_Mutable(m_SelectedObjectIndex);
-			if (ImGui::TreeNodeEx("Sphere", flags)) 
+			if (ImGui::Button("Duplicate"))
 			{
-				bDirty |= ImGui::DragFloat3("Position", glm::value_ptr(selectedObject.Position), 0.1f);
-				bDirty |= ImGui::DragFloat("Radius", &selectedObject.Radius, 0.1f);
-				bDirty |= ImGui::DragInt("Material", &selectedObject.MaterialIndex, 1.0f, 0, (int)m_Engine->m_Scene->Materials.size() - 1);
-				ImGui::TreePop();
+				bDirty |= true;
+				Sphere copy = m_Engine->m_Scene->GetObject(m_SelectedObjectIndex);
+				copy.Position += glm::vec3(0.05f);
+				m_Engine->m_Scene->Spheres.push_back(copy);
+
+				m_SelectedObjectIndex = m_Engine->m_Scene->Spheres.size() - 1;
 			}
-			if (ImGui::TreeNodeEx("Material", flags))
+			ImGui::SameLine(ImGui::GetItemRectSize().x + 15.0f);
+			if (ImGui::Button("Delete"))
 			{
-				{
-					const std::array<const char*, Material::ETypeCount>& enumChars = GetAllArrChars<Material::EType, Material::ETypeCount>();
-					int currentType = static_cast<int>(selectedMaterial.Type);
-					if (ImGui::Combo("Material Type", &currentType, enumChars.data(), enumChars.size()))
-					{
-						bDirty |= true;
-						selectedMaterial.Type = static_cast<Material::EType>(currentType);
-					}
+				bDirty |= true;
+				m_Engine->m_Scene->Destroy(m_SelectedObjectIndex);
+				m_SelectedObjectIndex = -1;
+			}
 
-				}
-				bDirty |= ImGui::ColorEdit3("Albedo", glm::value_ptr(selectedMaterial.Albedo));
-				switch (selectedMaterial.Type)
-				{
-					case Material::EType::Dielectric:
-					{
-						bDirty |= ImGui::DragFloat("Refraction Index", &selectedMaterial.RefactionIndex, 0.001f);
-						break;
-					}
-					case Material::EType::Lambertian:
-					{
-						break;
-					}
-					case Material::EType::Metalic:
-					{
-						bDirty |= ImGui::DragFloat("Fuzzy", &selectedMaterial.Fuzzy, 0.001f);
 
-						break;
-					}
-				}
-				ImGui::TreePop();
+			if (m_SelectedObjectIndex >= 0)
+			{
+				auto& scene = m_Engine->m_Scene;
+				Sphere& selectedObject = scene->GetObject_Mutable(m_SelectedObjectIndex);
+				DrawDetailsOfObject(selectedObject, bDirty, scene);
 			}
 		}
 		if (bDirty)
@@ -134,7 +162,7 @@ public:
 		m_SelectedObjectIndex = hit.ObjectIndex;
 	}
 public:
-	eventpp::CallbackList<void(const glm::vec2&)> OnViewport_LeftMouseClick;
+	eventpp::CallbackList<void(const glm::vec2&)> OnViewport_LeftMouseClick{};
 
 private:
 	std::shared_ptr<Engine> m_Engine;

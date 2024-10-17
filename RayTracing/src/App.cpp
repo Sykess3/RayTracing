@@ -9,6 +9,7 @@
 #include "AssetManager.h"
 #include "Editor/SaveScenePopup.h"
 #include "Editor/LoadScenePopup.h"
+#include "Editor/CreateObjectPopup.h"
 #include "UIManager.h"
 
 
@@ -30,19 +31,24 @@ Walnut::Application* Walnut::CreateApplication(int argc, char** argv)
 
 	app->SetMenubarCallback([app, engine]()
 		{
+			UIManager& uiManager = UIManager::Get();
 			if (ImGui::BeginMenu("File"))
 			{
-				UIManager& uiManager = UIManager::Get();
-				if (ImGui::MenuItem("Save scene")) 
+				if (ImGui::MenuItem("Save")) 
 				{
 					uiManager.ShowPopup("SaveScene", std::make_unique<SaveScenePopup>("Save scene", "Save", "Cancel", engine));
 				}
-				else if (ImGui::MenuItem("Load scene")) 
+				else if (ImGui::MenuItem("Load")) 
 				{
 					uiManager.ShowPopup("LoadScene", std::make_unique<LoadScenePopup>("Load scene", "Load", "Cancel", engine));
-					//engine->m_AssetManager->LoadJSON(engine->m_Scene, "Content\\Scenes\\testfile.json");
-
-					//engine->m_Renderer->ResetFrameIndex();
+				}
+				ImGui::EndMenu();
+			}
+			else if (ImGui::BeginMenu("Scene")) 
+			{
+				if (ImGui::MenuItem("Create")) 
+				{
+					uiManager.ShowPopup("CreateObject", std::make_unique<CreateObjectPopup>("Create object", "Create", "Cancel", engine));
 				}
 				ImGui::EndMenu();
 			}
