@@ -19,7 +19,7 @@ public:
 	static void DrawDetailsOfObject(Sphere& selectedObject, bool& bDirty, std::shared_ptr<Scene> scene)
 	{
 		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
-		Material& selectedMaterial = scene->GetMaterial_Mutable(selectedObject.MaterialIndex);
+		Material& selectedMaterial = scene->Materials[selectedObject.MaterialIndex];
 		if (ImGui::TreeNodeEx("Sphere", flags))
 		{
 			bDirty |= ImGui::DragFloat3("Position", glm::value_ptr(selectedObject.Position), 0.1f);
@@ -40,7 +40,10 @@ public:
 				}
 
 			}
-			bDirty |= ImGui::ColorEdit3("Albedo", glm::value_ptr(selectedMaterial.Albedo));
+			if (selectedMaterial.Type != Material::EType::Dielectric)
+			{
+				bDirty |= ImGui::ColorEdit3("Albedo", glm::value_ptr(selectedMaterial.Albedo));
+			}
 			switch (selectedMaterial.Type)
 			{
 			case Material::EType::Dielectric:

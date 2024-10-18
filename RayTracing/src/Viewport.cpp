@@ -2,6 +2,7 @@
 #include "glm/gtx/string_cast.hpp"
 #include "Walnut/Input/Input.h"
 #include "imgui_internal.h"
+#include "Walnut/Random.h"
 
 static Viewport* s_Instance;
 
@@ -17,24 +18,57 @@ Viewport::Viewport(std::shared_ptr<Engine> inEngine)
 
 	Material& pinkSphere = m_Engine->m_Scene->Materials.emplace_back();
 	pinkSphere.Albedo = { 1.0f, 0.0f, 1.0f };
-	pinkSphere.Fuzzy = 0.1f;
+	pinkSphere.Fuzzy = 0.8f;
 	pinkSphere.Type = Material::EType::Metalic;
 
 	Material& blueSphere = m_Engine->m_Scene->Materials.emplace_back();
 	blueSphere.Albedo = { 0.2f, 0.3f, 1.0f };
-	pinkSphere.Fuzzy = 0.1f;
+	pinkSphere.Fuzzy = 0.9f;
 	pinkSphere.Type = Material::EType::Metalic;
+
+	Material& blueSphere2 = m_Engine->m_Scene->Materials.emplace_back();
+	blueSphere2.Albedo = { 0.f, 1.0f, 1.0f };
+	blueSphere2.Fuzzy = 0.2f;
+	blueSphere2.Type = Material::EType::Metalic;
+
+	Material& blueSphere3 = m_Engine->m_Scene->Materials.emplace_back();
+	blueSphere3.Albedo = { 1.f, 0.3f, 0.0f };
+	blueSphere3.Fuzzy = 0.6f;
+	blueSphere3.Type = Material::EType::Metalic;
+
+	Material& blueSphere4 = m_Engine->m_Scene->Materials.emplace_back();
+	blueSphere4.Albedo = { 1.f, 0.0f, 0.3f };
+	blueSphere4.Fuzzy = 0.1f;
+	blueSphere4.Type = Material::EType::Metalic;
 
 	Material& TestSphere = m_Engine->m_Scene->Materials.emplace_back();
 	TestSphere.Albedo = { 1.0f, 1.0f, 1.0f };
 	TestSphere.RefactionIndex = 0.99f;
 	TestSphere.Type = Material::EType::Dielectric;
 
+	Material& TestSphere2 = m_Engine->m_Scene->Materials.emplace_back();
+	TestSphere2.Albedo = { 1.0f, 1.0f, 1.0f };
+	TestSphere2.RefactionIndex = 1.5f;
+	TestSphere2.Type = Material::EType::Dielectric;
+
+	Material& TestSphere3 = m_Engine->m_Scene->Materials.emplace_back();
+	TestSphere3.Albedo = { 1.0f, 0.0f, 1.0f };
+	TestSphere3.RefactionIndex = 0.7f;
+	TestSphere3.Type = Material::EType::Dielectric;
+
 	Material& orangeSphere = m_Engine->m_Scene->Materials.emplace_back();
 	orangeSphere.Albedo = { 0.8f, 0.5f, 0.2f };
 	pinkSphere.Type = Material::EType::Lambertian;
 
-	{
+	Material& sphere2 = m_Engine->m_Scene->Materials.emplace_back();
+	sphere2.Albedo = { 0.2f, 0.6f, 0.2f };
+	sphere2.Type = Material::EType::Lambertian;
+
+	Material& sphere3 = m_Engine->m_Scene->Materials.emplace_back();
+	sphere3.Albedo = { 0.7f, 0.1f, 0.7f };
+	sphere3.Type = Material::EType::Lambertian;
+
+	/* {
 		Sphere sphere;
 		sphere.Position = { 0.0f, 0.0f, 0.0f };
 		sphere.Radius = 1.0f;
@@ -62,6 +96,27 @@ Viewport::Viewport(std::shared_ptr<Engine> inEngine)
 		sphere.Radius = 100.0f;
 		sphere.MaterialIndex = 3;
 		m_Engine->m_Scene->Spheres.push_back(sphere);
+	}*/
+
+	Sphere sphere;
+	sphere.Position = { 0.0f, -100.450f, 0.0f };
+	sphere.Radius = 100.0f;
+	auto it = std::find(m_Engine->m_Scene->Materials.begin(), m_Engine->m_Scene->Materials.end(), orangeSphere);
+	sphere.MaterialIndex = std::distance(m_Engine->m_Scene->Materials.begin(), it);
+	m_Engine->m_Scene->Spheres.push_back(sphere);
+
+	for (int a = -6; a < 6; a++) {
+		for (int b = -6; b < 6; b++) {
+			glm::vec3 center(1.4f * (float)a + Walnut::Random::Float(), 0.f,  1.4f * (float)b + Walnut::Random::Float());
+			if ((center - glm::vec3(4.f, 0.2f, 0.f)).length() > 0.9f)
+			{
+				Scene& scene = *m_Engine->m_Scene;
+				Sphere& sphere = m_Engine->m_Scene->Spheres.emplace_back();
+				sphere.Radius = Walnut::Random::Float() * 0.1f + 0.5f;
+				sphere.MaterialIndex = Walnut::Random::UInt(0, m_Engine->m_Scene->Materials.size() - 1);
+				sphere.Position = center;
+			}
+		}
 	}
 
 }

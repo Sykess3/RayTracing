@@ -24,6 +24,14 @@ struct Material
 		MAX
 	};
 
+	bool operator==(const Material& other) const
+	{
+		return Albedo == other.Albedo &&
+			Fuzzy == other.Fuzzy &&
+			RefactionIndex == other.RefactionIndex &&
+			Type == other.Type;
+	}
+
 	YAS_DEFINE_STRUCT_SERIALIZE_NVP("Material",
 		("Albedo", Albedo),
 		("Fuzzy", Fuzzy),

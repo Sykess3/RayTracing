@@ -2,6 +2,7 @@
 
 #include <glm/glm.hpp>
 #include <vector>
+#include "yas/serialize.hpp"
 
 class Camera
 {
@@ -22,6 +23,8 @@ public:
 	const std::vector<glm::vec3>& GetRayDirections() const { return m_RayDirections; }
 
 	float GetRotationSpeed();
+
+	YAS_DEFINE_STRUCT_SERIALIZE_NVP("Camera", ("Position", m_Position));
 private:
 	void RecalculateProjection();
 	void RecalculateView();
