@@ -13,9 +13,22 @@
 class Renderer
 {
 public:
+
+
+	enum class Algo : int
+	{
+		CPUSingleThreaded,
+		CPUMultiThreaded,
+		MAX
+	};
+	constexpr static int AlgoCout = static_cast<int>(Algo::MAX);
+
+
 	struct Settings
 	{
+
 		bool Accumulate = true;
+		Algo AlgoType = Algo::CPUMultiThreaded;
 	};
 public:
 	Renderer() = default;
@@ -28,6 +41,7 @@ public:
 
 	void ResetFrameIndex() { m_FrameIndex = 1; }
 	Settings& GetSettings() { return m_Settings; }
+	
 private:
 	void ClearAccumulationData();
 private:
@@ -63,4 +77,23 @@ private:
 	glm::vec4* m_AccumulationData = nullptr;
 
 	uint32_t m_FrameIndex = 1;
+	uint32_t m_frameRandomNumber;
 };
+
+
+template <>
+inline const std::array<const char*, Renderer::AlgoCout>& GetAllArrChars<Renderer::Algo, Renderer::AlgoCout>() {
+	static const std::array<const char*, Renderer::AlgoCout> typeNames = { "CPU Single Threaded", "CPU Multi Threaded" };
+	return typeNames;
+}
+
+inline const char* EnumToChar(Renderer::Algo t) {
+	switch (t)
+	{
+	case Renderer::Algo::CPUSingleThreaded:
+		return "CPU Single Threaded";
+	case Renderer::Algo::CPUMultiThreaded:
+		return "CPU Multi Threaded";
+	}
+	assert(false);
+}

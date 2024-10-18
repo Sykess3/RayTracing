@@ -89,7 +89,15 @@ public:
 		ImGui::Begin("Settings");
 		ImGui::Text("Last render: %.3fms", m_Engine->m_LastRenderTime);
 
-		ImGui::Checkbox("Accumulate", &m_Engine->m_Renderer->GetSettings().Accumulate);
+		Renderer::Settings& settings = m_Engine->m_Renderer->GetSettings();
+		ImGui::Checkbox("Accumulate", &settings.Accumulate);
+
+		int currentAlgorithm = static_cast<int>(settings.AlgoType);
+		const std::array<const char*, Renderer::AlgoCout>& algoEnumChars = GetAllArrChars<Renderer::Algo, Renderer::AlgoCout>();
+		if (ImGui::Combo("Algorithm", &currentAlgorithm, algoEnumChars.data(), algoEnumChars.size()))
+		{
+			settings.AlgoType = static_cast<Renderer::Algo>(currentAlgorithm);
+		}
 
 		if (ImGui::Button("Reset"))
 			m_Engine->m_Renderer->ResetFrameIndex();

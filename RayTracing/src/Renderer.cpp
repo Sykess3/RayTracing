@@ -57,51 +57,55 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 	if (m_FrameIndex == 1)
 		ClearAccumulationData();
 
+	m_frameRandomNumber = Walnut::Random::UInt(0, m_FinalImage->GetHeight() * m_FinalImage->GetWidth() * 0.5f);
 
-#define MT 1
-#if MT
-	std::for_each(std::execution::par, m_ImageVerticalIter.begin(), m_ImageVerticalIter.end(),
-		[this](uint32_t y)
-		{
-			std::for_each(m_ImageHorizontalIter.begin(), m_ImageHorizontalIter.end(),
-				[this, y](uint32_t x)
-				{
-					glm::vec4 color = PerPixel(x, y);
-					if (color.x < 0)
-					{
-						int a = 6;
-					}
-					m_AccumulationData[x + y * m_FinalImage->GetWidth()] += color;
-
-					glm::vec4 accumulatedColor = m_AccumulationData[x + y * m_FinalImage->GetWidth()];
-					if (accumulatedColor.x < 0)
-					{
-						int a = 5;
-					}
-					accumulatedColor /= (float)m_FrameIndex;
-
-					accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0.0f), glm::vec4(1.0f));
-					m_ImageData[x + y * m_FinalImage->GetWidth()] = Utils::ConvertToRGBA(accumulatedColor);
-				});
-		});
-
-#else
-
-	for (uint32_t y = 0; y < m_FinalImage->GetHeight(); y++)
+	switch (m_Settings.AlgoType)
 	{
-		for (uint32_t x = 0; x < m_FinalImage->GetWidth(); x++)
+
+	case Algo::CPUSingleThreaded:
+		for (uint32_t y = 0; y < m_FinalImage->GetHeight(); y++)
 		{
-			glm::vec4 color = PerPixel(x, y);
-			m_AccumulationData[x + y * m_FinalImage->GetWidth()] += color;
+			for (uint32_t x = 0; x < m_FinalImage->GetWidth(); x++)
+			{
+				glm::vec4 color = PerPixel(x, y);
+				m_AccumulationData[x + y * m_FinalImage->GetWidth()] += color;
 
-			glm::vec4 accumulatedColor = m_AccumulationData[x + y * m_FinalImage->GetWidth()];
-			accumulatedColor /= (float)m_FrameIndex;
+				glm::vec4 accumulatedColor = m_AccumulationData[x + y * m_FinalImage->GetWidth()];
+				accumulatedColor /= (float)m_FrameIndex;
 
-			accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0.0f), glm::vec4(1.0f));
-			m_ImageData[x + y * m_FinalImage->GetWidth()] = Utils::ConvertToRGBA(accumulatedColor);
+				accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0.0f), glm::vec4(1.0f));
+				m_ImageData[x + y * m_FinalImage->GetWidth()] = Utils::ConvertToRGBA(accumulatedColor);
+			}
 		}
+		break;
+	case Algo::CPUMultiThreaded:
+		std::for_each(std::execution::par, m_ImageVerticalIter.begin(), m_ImageVerticalIter.end(),
+			[this](uint32_t y)
+			{
+				std::for_each(m_ImageHorizontalIter.begin(), m_ImageHorizontalIter.end(),
+					[this, y](uint32_t x)
+					{
+						glm::vec4 color = PerPixel(x, y);
+						if (color.x < 0)
+						{
+							int a = 6;
+						}
+						m_AccumulationData[x + y * m_FinalImage->GetWidth()] += color;
+
+						glm::vec4 accumulatedColor = m_AccumulationData[x + y * m_FinalImage->GetWidth()];
+						if (accumulatedColor.x < 0)
+						{
+							int a = 5;
+						}
+						accumulatedColor /= (float)m_FrameIndex;
+
+						accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0.0f), glm::vec4(1.0f));
+						m_ImageData[x + y * m_FinalImage->GetWidth()] = Utils::ConvertToRGBA(accumulatedColor);
+					});
+			});
+		break;
 	}
-#endif
+	
 
 	m_FinalImage->SetData(m_ImageData);
 
@@ -190,7 +194,7 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 	glm::vec3 contribution(1.0f);
 
 	int bounces = 50;
-	uint32_t traceSeed = PixedId * m_FrameIndex;
+	uint32_t traceSeed = m_frameRandomNumber + PixedId;
 	float attenuationPerBounce = 0.7;
 	for (int i = 0; i < bounces; i++)
 	{
