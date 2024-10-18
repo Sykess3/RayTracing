@@ -89,6 +89,7 @@ public:
 
 	virtual void OnUIRender() override
 	{
+		bool bDirty = false;
 		ImGui::Begin("Settings");
 		ImGui::Text("Last render: %.3fms", m_Engine->m_LastRenderTime);
 
@@ -101,6 +102,8 @@ public:
 		{
 			settings.AlgoType = static_cast<Renderer::Algo>(currentAlgorithm);
 		}
+
+		bDirty |= ImGui::DragInt("Bounces", &settings.Bounces, 1.0f, 1, 150);
 
 		if (ImGui::Button("Reset"))
 			m_Engine->m_Renderer->ResetFrameIndex();
@@ -123,7 +126,6 @@ public:
 
 		ImGui::Begin("Details");
 
-		bool bDirty = false;
 		if (m_SelectedObjectIndex >= 0)
 		{
 			if (ImGui::Button("Duplicate"))

@@ -193,7 +193,7 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 	
 	glm::vec3 contribution(1.0f);
 
-	int bounces = 50;
+	int bounces = GetSettings().Bounces;
 	uint32_t traceSeed = m_frameRandomNumber + PixedId;
 	float attenuationPerBounce = 0.7;
 	for (int i = 0; i < bounces; i++)
