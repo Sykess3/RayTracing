@@ -238,7 +238,7 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 Renderer::HitPayload Renderer::TraceRay(const Ray& ray)
 {
 
-	Scene::RayCastHit Hit = m_ActiveScene->RayCast(ray);
+	RayCastHit Hit = m_ActiveScene->RayCast(ray);
 
 	if (Hit.ObjectIndex < 0)
 		return Miss(ray);

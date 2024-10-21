@@ -3,6 +3,7 @@
 #include "Walnut/Input/Input.h"
 #include "imgui_internal.h"
 #include "Walnut/Random.h"
+#include <cassert>
 
 static Viewport* s_Instance;
 
@@ -15,6 +16,7 @@ Viewport::Viewport(std::shared_ptr<Engine> inEngine)
 	: m_Engine(inEngine)
 {
 	s_Instance = this;
+	m_Engine->m_Scene->Materials.reserve(20);
 
 	Material& pinkSphere = m_Engine->m_Scene->Materials.emplace_back();
 	pinkSphere.Albedo = { 1.0f, 0.0f, 1.0f };
@@ -41,7 +43,7 @@ Viewport::Viewport(std::shared_ptr<Engine> inEngine)
 	blueSphere4.Fuzzy = 0.1f;
 	blueSphere4.Type = Material::EType::Metalic;
 
-	Material& TestSphere = m_Engine->m_Scene->Materials.emplace_back();
+	/*Material& TestSphere = m_Engine->m_Scene->Materials.emplace_back();
 	TestSphere.Albedo = { 1.0f, 1.0f, 1.0f };
 	TestSphere.RefactionIndex = 0.99f;
 	TestSphere.Type = Material::EType::Dielectric;
@@ -54,7 +56,7 @@ Viewport::Viewport(std::shared_ptr<Engine> inEngine)
 	Material& TestSphere3 = m_Engine->m_Scene->Materials.emplace_back();
 	TestSphere3.Albedo = { 1.0f, 0.0f, 1.0f };
 	TestSphere3.RefactionIndex = 0.7f;
-	TestSphere3.Type = Material::EType::Dielectric;
+	TestSphere3.Type = Material::EType::Dielectric;*/
 
 	Material& orangeSphere = m_Engine->m_Scene->Materials.emplace_back();
 	orangeSphere.Albedo = { 0.8f, 0.5f, 0.2f };
@@ -74,7 +76,7 @@ Viewport::Viewport(std::shared_ptr<Engine> inEngine)
 		sphere.Radius = 1.0f;
 		sphere.MaterialIndex = 0;
 		m_Engine->m_Scene->Spheres.push_back(sphere);
-	}
+	}*/
 
 	{
 		Sphere sphere;
@@ -83,30 +85,47 @@ Viewport::Viewport(std::shared_ptr<Engine> inEngine)
 		sphere.MaterialIndex = 2;
 		m_Engine->m_Scene->Spheres.push_back(sphere);
 
+		{
+			Sphere sphere;
+			sphere.Position = { 2.0f, 0.0f, 2.0f };
+			sphere.Radius = 1.0f;
+			sphere.MaterialIndex = 2;
+			m_Engine->m_Scene->Spheres.push_back(sphere);
+		}
+
 		Sphere sphere2;
 		sphere2.Position = { -2.0f, 0.0f, 0.0f };
 		sphere2.Radius = 1.0f;
 		sphere2.MaterialIndex = 2;
 		m_Engine->m_Scene->Spheres.push_back(sphere2);
+
+
+		{
+			Sphere sphere;
+			sphere.Position = { -1.0f, 0.0f, -3.0f };
+			sphere.Radius = 1.0f;
+			sphere.MaterialIndex = 2;
+			m_Engine->m_Scene->Spheres.push_back(sphere);
+		}
 	}
 
 	{
 		Sphere sphere;
-		sphere.Position = { 0.0f, -101.0f, 0.0f };
-		sphere.Radius = 100.0f;
+		sphere.Position = { 0.f, 0, 0.0f };
+		sphere.Radius = 1.0f;
 		sphere.MaterialIndex = 3;
 		m_Engine->m_Scene->Spheres.push_back(sphere);
-	}*/
+	}
 
-	Sphere sphere;
+	/*Sphere sphere;
 	sphere.Position = { 0.0f, -100.450f, 0.0f };
 	sphere.Radius = 100.0f;
 	auto it = std::find(m_Engine->m_Scene->Materials.begin(), m_Engine->m_Scene->Materials.end(), orangeSphere);
 	sphere.MaterialIndex = std::distance(m_Engine->m_Scene->Materials.begin(), it);
-	m_Engine->m_Scene->Spheres.push_back(sphere);
+	m_Engine->m_Scene->Spheres.push_back(sphere);*/
 
-	for (int a = -6; a < 6; a++) {
-		for (int b = -6; b < 6; b++) {
+	/*for (int a = -3; a < 3; a++) {
+		for (int b = -3; b < 3; b++) {
 			glm::vec3 center(1.4f * (float)a + Walnut::Random::Float(), 0.f,  1.4f * (float)b + Walnut::Random::Float());
 			if ((center - glm::vec3(4.f, 0.2f, 0.f)).length() > 0.9f)
 			{
@@ -117,8 +136,17 @@ Viewport::Viewport(std::shared_ptr<Engine> inEngine)
 				sphere.Position = center;
 			}
 		}
+	}*/
+	for (Sphere& sphere : m_Engine->m_Scene->Spheres)
+	{
+		sphere.CalcBoundingBox();
+		if (sphere.MaterialIndex < 0 || sphere.MaterialIndex >= m_Engine->m_Scene->Materials.size())
+		{
+			assert(0);
+		}
 	}
 
+	m_Engine->m_Scene->ConstructBVH();
 }
 
 Viewport::~Viewport()
