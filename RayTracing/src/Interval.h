@@ -4,7 +4,7 @@ class Interval {
 public:
 	float Min, Max;
 
-	Interval() : Min(std::numeric_limits<float>::min()), Max(std::numeric_limits<float>::max()) {} // Default interval is empty
+	Interval() : Min(std::numeric_limits<float>::max()), Max(std::numeric_limits<float>::min()) {} // Default interval is empty
 
 	Interval(float min, float max) : Min(min), Max(max) {}
 

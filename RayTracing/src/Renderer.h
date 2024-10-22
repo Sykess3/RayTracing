@@ -29,7 +29,7 @@ public:
 
 		bool Accumulate = true;
 		Algo AlgoType = Algo::CPUMultiThreaded;
-		int Bounces = 5.0f;
+		int Bounces = 1.0f;
 	};
 public:
 	Renderer() = default;

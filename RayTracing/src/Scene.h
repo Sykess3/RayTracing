@@ -7,6 +7,7 @@
 #include "AABB.h"
 #include <algorithm>
 #include "BHV_Node.h"
+#include <tuple>
 #include <yas/serialize.hpp>
 
 template <typename T, int Count>
@@ -110,8 +111,12 @@ struct Scene
 
 	void ConstructBVH() 
 	{
-		auto copy = Spheres;
-		RootBVH_Node = ConstructBVH(copy, 0, copy.size());
+		std::vector<std::tuple<Sphere, int>> nodes;
+		for (int i = 0; i < Spheres.size(); ++i)
+		{
+			nodes.push_back({Spheres[i], i });
+		}
+		RootBVH_Node = ConstructBVH(nodes, 0, nodes.size());
 		RootBVH_Node->Display(0);
 	}
 
@@ -148,6 +153,7 @@ struct Scene
 	{
 		HitDetection transieHit;
 		transieHit.CurrentHitInterval.Min = 0.01f;
+		transieHit.CurrentHitInterval.Max = std::numeric_limits<float>::max();
 		transieHit.HitObject = -1;
 		RootBVH_Node->RayCast(ray, transieHit, this);
 
@@ -186,8 +192,7 @@ struct Scene
 		}
 
 		// float t0 = (-b + glm::sqrt(discriminant)) / (2.0f * a); // Second hit distance (currently unused)
-		float root = glm::abs((-b - glm::sqrt(discriminant)) / (2.0f * a));
-		//float root = (-b + glm::sqrt(discriminant)) / (2.0f * a);
+		float root = (-b - glm::sqrt(discriminant)) / (2.0f * a);
 
 		if (root < 0.0f)
 		{
@@ -245,21 +250,21 @@ private:
 	}*/
 
 private:
-	std::unique_ptr<BVH_Node> ConstructBVH(std::vector<Sphere>& nodes, int start, int end) {
+	std::unique_ptr<BVH_Node> ConstructBVH(std::vector<std::tuple<Sphere, int>>& nodes, int start, int end) {
 		if (start >= end) {
 			return nullptr; 
 		}
 
 		aabb bbox;
 		for (int i = start; i < end; ++i) {
-			bbox = aabb(bbox, nodes[i].BoundingBox);
+			bbox = aabb(bbox, std::get<0>(nodes[i]).BoundingBox);
 		}
 
 		int object_span = end - start;
 
 		// If only one object, it's a leaf node
 		if (object_span == 1) {
-			return std::make_unique<BVH_Node>(start, bbox);
+			return std::make_unique<BVH_Node>(std::get<1>(nodes[start]), bbox);
 		}
 
 		// Choose the axis to sort on, based on the longest axis of the bounding box

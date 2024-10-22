@@ -10,6 +10,7 @@ bool BVH_Node::box_compare(const Sphere& a, const Sphere& b, int axis_index)
 
 void BVH_Node::RayCast(const Ray& ray, HitDetection& transientHit, const Scene* scene)
 {
+
 	if (m_boundingObjectIndex >= 0)
 	{
 		RayCastHit hit = scene->TestHitSphere(ray, m_boundingObjectIndex, transientHit.CurrentHitInterval);
@@ -19,9 +20,9 @@ void BVH_Node::RayCast(const Ray& ray, HitDetection& transientHit, const Scene* 
 			{
 				transientHit.CurrentHitInterval.Max = hit.HitDistance;
 				transientHit.HitObject = hit.ObjectIndex;
-				return;
 			}
 		}
+		return;
 	}
 
 	if (!m_bbox.hit(ray, transientHit.CurrentHitInterval))

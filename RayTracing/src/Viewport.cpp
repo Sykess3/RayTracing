@@ -78,7 +78,7 @@ Viewport::Viewport(std::shared_ptr<Engine> inEngine)
 		m_Engine->m_Scene->Spheres.push_back(sphere);
 	}*/
 
-	{
+	/*{
 		Sphere sphere;
 		sphere.Position = { 2.0f, 0.0f, 0.0f };
 		sphere.Radius = 1.0f;
@@ -93,11 +93,6 @@ Viewport::Viewport(std::shared_ptr<Engine> inEngine)
 			m_Engine->m_Scene->Spheres.push_back(sphere);
 		}
 
-		Sphere sphere2;
-		sphere2.Position = { -2.0f, 0.0f, 0.0f };
-		sphere2.Radius = 1.0f;
-		sphere2.MaterialIndex = 2;
-		m_Engine->m_Scene->Spheres.push_back(sphere2);
 
 
 		{
@@ -107,24 +102,19 @@ Viewport::Viewport(std::shared_ptr<Engine> inEngine)
 			sphere.MaterialIndex = 2;
 			m_Engine->m_Scene->Spheres.push_back(sphere);
 		}
-	}
+	}*/
 
 	{
-		Sphere sphere;
-		sphere.Position = { 0.f, 0, 0.0f };
-		sphere.Radius = 1.0f;
-		sphere.MaterialIndex = 3;
-		m_Engine->m_Scene->Spheres.push_back(sphere);
 	}
 
-	/*Sphere sphere;
+	Sphere sphere;
 	sphere.Position = { 0.0f, -100.450f, 0.0f };
 	sphere.Radius = 100.0f;
 	auto it = std::find(m_Engine->m_Scene->Materials.begin(), m_Engine->m_Scene->Materials.end(), orangeSphere);
 	sphere.MaterialIndex = std::distance(m_Engine->m_Scene->Materials.begin(), it);
-	m_Engine->m_Scene->Spheres.push_back(sphere);*/
+	m_Engine->m_Scene->Spheres.push_back(sphere);
 
-	/*for (int a = -3; a < 3; a++) {
+	for (int a = -3; a < 3; a++) {
 		for (int b = -3; b < 3; b++) {
 			glm::vec3 center(1.4f * (float)a + Walnut::Random::Float(), 0.f,  1.4f * (float)b + Walnut::Random::Float());
 			if ((center - glm::vec3(4.f, 0.2f, 0.f)).length() > 0.9f)
@@ -136,7 +126,7 @@ Viewport::Viewport(std::shared_ptr<Engine> inEngine)
 				sphere.Position = center;
 			}
 		}
-	}*/
+	}
 	for (Sphere& sphere : m_Engine->m_Scene->Spheres)
 	{
 		sphere.CalcBoundingBox();

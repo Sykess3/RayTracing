@@ -10,7 +10,7 @@
 struct HitDetection
 {
 	Interval CurrentHitInterval;
-	int HitObject;
+	int HitObject = -1;
 };
 
 
@@ -20,23 +20,24 @@ struct Scene;
 struct BVH_Node
 {
 public:
-
+	inline static std::string WhyMiss;
 	inline static int Count1 = 0;
 	inline static int Count2 = 0;
+	int CountObj = 0;
 	std::string Debug;
 
 	static bool box_compare(const Sphere& a, const Sphere& b, int axis_index);
 
-	static bool box_x_compare(const Sphere& a, const Sphere& b) {
-		return box_compare(a, b, 0);
+	static bool box_x_compare(const std::tuple<const Sphere&, int>& a, const std::tuple<const Sphere&, int>& b) {
+		return box_compare(std::get<0>(a), std::get<0>(b), 0);
 	}
 
-	static bool box_y_compare(const Sphere& a, const Sphere& b) {
-		return box_compare(a, b, 1);
+	static bool box_y_compare(const std::tuple<const Sphere&, int>& a, const std::tuple<const Sphere&, int>& b) {
+		return box_compare(std::get<0>(a), std::get<0>(b), 1);
 	}
 
-	static bool box_z_compare(const Sphere& a, const Sphere& b) {
-		return box_compare(a, b, 2);
+	static bool box_z_compare(const std::tuple<const Sphere&, int>& a, const std::tuple<const Sphere&, int>& b) {
+		return box_compare(std::get<0>(a), std::get<0>(b), 2);
 	}
 
 
