@@ -58,7 +58,7 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 		ClearAccumulationData();
 
 	m_frameRandomNumber = Walnut::Random::UInt(0, m_FinalImage->GetHeight() * m_FinalImage->GetWidth() * 0.5f);
-
+	
 	switch (m_Settings.AlgoType)
 	{
 
@@ -79,7 +79,7 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 		}
 		break;
 	case Algo::CPUMultiThreaded:
-		std::for_each(std::execution::par, m_ImageVerticalIter.begin(), m_ImageVerticalIter.end(),
+		/*std::for_each(std::execution::par, m_ImageVerticalIter.begin(), m_ImageVerticalIter.end(),
 			[this](uint32_t y)
 			{
 				std::for_each(m_ImageHorizontalIter.begin(), m_ImageHorizontalIter.end(),
@@ -102,7 +102,45 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 						accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0.0f), glm::vec4(1.0f));
 						m_ImageData[x + y * m_FinalImage->GetWidth()] = Utils::ConvertToRGBA(accumulatedColor);
 					});
-			});
+			});*/
+
+		int numThreads = std::thread::hardware_concurrency() - 1;
+		if (numThreads < 1) {
+			numThreads = 1; // Ensure at least one thread
+		}
+
+		std::vector<std::thread> threadPool;
+		size_t height = m_ImageVerticalIter.size();
+		size_t width = m_ImageHorizontalIter.size();
+
+		// Divide the work between threads
+		size_t chunkSize = height / numThreads;
+
+		auto worker = [this, width](size_t startY, size_t endY) {
+			for (size_t y = startY; y < endY; ++y) {
+				for (size_t x = 0; x < width; ++x) {
+					glm::vec4 color = PerPixel(x, y);
+					m_AccumulationData[x + y * m_FinalImage->GetWidth()] += color;
+
+					glm::vec4 accumulatedColor = m_AccumulationData[x + y * m_FinalImage->GetWidth()];
+					accumulatedColor /= (float)m_FrameIndex;
+					accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0.0f), glm::vec4(1.0f));
+					m_ImageData[x + y * m_FinalImage->GetWidth()] = Utils::ConvertToRGBA(accumulatedColor);
+				}
+			}
+		};
+
+		// Create threads and assign chunks of work
+		for (int i = 0; i < numThreads; ++i) {
+			size_t startY = i * chunkSize;
+			size_t endY = (i == numThreads - 1) ? height : startY + chunkSize; // Handle last chunk separately
+			threadPool.emplace_back(worker, startY, endY);
+		}
+
+		// Join all threads
+		for (std::thread& t : threadPool) {
+			t.join();
+		}
 		break;
 	}
 	
@@ -202,7 +240,7 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 		Renderer::HitPayload payload = TraceRay(ray);
 		if (payload.HitDistance < 0.0f)
 		{
-			contribution *= glm::vec3(0.6f, 0.7f, 0.9f);
+			contribution *= glm::vec3(0.6f, 0.7f, 1.f);
 			break;
 		}
 		const Sphere& sphere = m_ActiveScene->Spheres[payload.ObjectIndex];

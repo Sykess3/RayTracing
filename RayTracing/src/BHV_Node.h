@@ -20,11 +20,8 @@ struct Scene;
 struct BVH_Node
 {
 public:
-	inline static std::string WhyMiss;
 	inline static int Count1 = 0;
 	inline static int Count2 = 0;
-	int CountObj = 0;
-	std::string Debug;
 
 	static bool box_compare(const Sphere& a, const Sphere& b, int axis_index);
 
@@ -41,55 +38,40 @@ public:
 	}
 
 
-	BVH_Node(std::unique_ptr<BVH_Node> left, std::unique_ptr<BVH_Node> right, const aabb& bbox)
-		: m_left(std::move(left)),
-		m_right(std::move(right)),
+	BVH_Node(int16_t left, int16_t right, const aabb& bbox)
+		: m_left(left),
+		m_right(right),
 		m_bbox(bbox),
 		m_boundingObjectIndex(-1)
 
 	{
 		Count1++;
-		Debug = std::string("bbox:") + std::to_string(Count1);
 	}
 
 	BVH_Node(int boundingObjectIndex, const aabb& bbox)
-		: m_left(nullptr),
-		m_right(nullptr),
+		: m_left(std::numeric_limits<int16_t>::max()),
+		m_right(std::numeric_limits<int16_t>::max()),
 		m_bbox(bbox),
 		m_boundingObjectIndex(boundingObjectIndex)
 
 	{
 		Count2++;
-		Debug = std::string("object:") + std::to_string(boundingObjectIndex);
 	}
 
 	void Display(int parentCount) 
 	{
-		std::string result;
-		for (int i = 0; i <= parentCount; ++i)
-		{
-			result += "   ";
-		}
 
-		result += Debug;
-		std::cout << result << std::endl;
-		if (m_left)
-		{
-			m_left->Display(parentCount + 1);
-		}
-		if (m_right)
-		{
-			m_right->Display(parentCount + 1);
-		}
 	}
-	void RayCast(const Ray& ray, HitDetection& transientHit, const Scene* scene);
+
+	void PrintChildAddress() {
+
+	}
+	bool RayCast(const Ray& ray, HitDetection& transientHit, const Scene* scene) const;
 
 	const aabb& GetBoundingBox() const { return m_bbox; }
 
-private:
-	std::unique_ptr<BVH_Node> m_left;
-	std::unique_ptr<BVH_Node> m_right;
-
 	aabb m_bbox;
+	int16_t m_left;
+	int16_t m_right;
 	int m_boundingObjectIndex;
 };

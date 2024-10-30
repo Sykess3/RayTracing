@@ -104,20 +104,27 @@ struct Scene
 {
 	std::vector<Sphere> Spheres;
 	std::vector<Material> Materials;
-
-	std::unique_ptr<BVH_Node> RootBVH_Node;
+	std::vector<BVH_Node> m_nodes;
 
 	YAS_DEFINE_STRUCT_SERIALIZE_NVP("Scene", ("Spheres", Spheres), ("Materials", Materials));
 
 	void ConstructBVH() 
 	{
-		std::vector<std::tuple<Sphere, int>> nodes;
+		std::vector<std::tuple<Sphere, int>> sphereToIndex;
+		m_nodes.reserve(1000);
 		for (int i = 0; i < Spheres.size(); ++i)
 		{
-			nodes.push_back({Spheres[i], i });
+			sphereToIndex.push_back({Spheres[i], i });
 		}
-		RootBVH_Node = ConstructBVH(nodes, 0, nodes.size());
-		RootBVH_Node->Display(0);
+
+		ConstructBVH(sphereToIndex, m_nodes, 0, sphereToIndex.size());
+
+		std::reverse(m_nodes.begin(), m_nodes.end());
+		for(BVH_Node& node : m_nodes)
+		{
+			node.m_left = m_nodes.size() - 1 - node.m_left;
+			node.m_right = m_nodes.size() - 1 - node.m_right;
+		}
 	}
 
 	inline const Material& GetMaterial(int objectIndex) const 
@@ -149,18 +156,39 @@ struct Scene
 		}
 	}
 
+	void RayCastRec(const Ray& ray, const BVH_Node& root, HitDetection& detected) const
+	{
+		if (root.RayCast(ray, detected, this))
+		{
+			if (root.m_right != std::numeric_limits<int16_t>::max() && m_nodes[root.m_right].RayCast(ray, detected, this))
+			{
+				RayCastRec(ray, m_nodes[root.m_right], detected);
+			}
+			if (root.m_left != std::numeric_limits<int16_t>::max() && m_nodes[root.m_left].RayCast(ray, detected, this))
+			{
+				RayCastRec(ray, m_nodes[root.m_left], detected);
+			}
+		}
+	}
+
 	RayCastHit RayCast(const Ray& ray) const
 	{
+#if 0
+
 		HitDetection transieHit;
 		transieHit.CurrentHitInterval.Min = 0.01f;
 		transieHit.CurrentHitInterval.Max = std::numeric_limits<float>::max();
 		transieHit.HitObject = -1;
-		RootBVH_Node->RayCast(ray, transieHit, this);
+		const BVH_Node& root = m_nodes[0];
+		RayCastRec(ray, root, transieHit);
 
 		RayCastHit hit;
 		hit.HitDistance = transieHit.CurrentHitInterval.Max;
 		hit.ObjectIndex = transieHit.HitObject;
 		return hit;
+#else
+		return RayCastSphere(ray);
+#endif
 	}
 
 	RayCastHit TestHitSphere(const Ray& ray, int objectIndex, Interval& foundObjects)  const
@@ -211,7 +239,7 @@ struct Scene
 	}
 private:
 
-	/*
+	
 	RayCastHit RayCastSphere(const Ray& ray) const {
 		int closestSphere = -1;
 		float hitDistance = std::numeric_limits<float>::max();
@@ -247,45 +275,41 @@ private:
 		hit.HitDistance = hitDistance;
 		hit.ObjectIndex = closestSphere;
 		return hit;
-	}*/
+	}
 
 private:
-	std::unique_ptr<BVH_Node> ConstructBVH(std::vector<std::tuple<Sphere, int>>& nodes, int start, int end) {
+	int ConstructBVH(std::vector<std::tuple<Sphere, int>>& sphereToIndex, std::vector<BVH_Node>& nodes, int start, int end) {
 		if (start >= end) {
-			return nullptr; 
+			return std::numeric_limits<int16_t>::max();
 		}
 
 		aabb bbox;
 		for (int i = start; i < end; ++i) {
-			bbox = aabb(bbox, std::get<0>(nodes[i]).BoundingBox);
+			bbox = aabb(bbox, std::get<0>(sphereToIndex[i]).BoundingBox);
 		}
 
 		int object_span = end - start;
 
-		// If only one object, it's a leaf node
 		if (object_span == 1) {
-			return std::make_unique<BVH_Node>(std::get<1>(nodes[start]), bbox);
+			int index = std::get<1>(sphereToIndex[start]);
+			nodes.emplace_back(index, bbox);
+			return nodes.size() - 1;
 		}
 
-		// Choose the axis to sort on, based on the longest axis of the bounding box
 		int axis = bbox.longest_axis();
 		auto comparator = (axis == 0) ? BVH_Node::box_x_compare
 			: (axis == 1) ? BVH_Node::box_y_compare
 			: BVH_Node::box_z_compare;
 
-		// Sort objects along the chosen axis
-		std::sort(nodes.begin() + start, nodes.begin() + end, comparator);
+		std::sort(sphereToIndex.begin() + start, sphereToIndex.begin() + end, comparator);
 
-		// Find the midpoint to split the objects
 		int mid = start + object_span / 2;
 
-		// Recursively build the left and right subtrees
-		std::unique_ptr<BVH_Node> left = ConstructBVH(nodes, start, mid);
-		std::unique_ptr<BVH_Node> right = ConstructBVH(nodes, mid, end);
+		int left = ConstructBVH(sphereToIndex, nodes, start, mid);
+		int right = ConstructBVH(sphereToIndex, nodes, mid, end);
 
-		// Return a new BVH node that combines the left and right subtrees
-		auto node = std::make_unique<BVH_Node>(std::move(left), std::move(right), bbox);
+		nodes.emplace_back(left, right, bbox);
 
-		return node;
+		return nodes.size() - 1;
 	}
 };

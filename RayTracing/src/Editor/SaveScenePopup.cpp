@@ -26,4 +26,9 @@ void SaveScenePopup::DrawContent()
 	ImGui::Text("Enter file name:");
 
 	ImGui::InputText("##filename", m_buf, sizeof(m_buf));
+
+	const char* items[] = { "Text", "Binary" };
+	static int currentItem = 0; // This will store the current selection
+
+	ImGui::Combo("Select Format", &currentItem, items, IM_ARRAYSIZE(items));
 }

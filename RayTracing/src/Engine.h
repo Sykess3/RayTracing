@@ -5,6 +5,7 @@
 #include "Camera.h"
 #include "Renderer.h"
 #include "AssetManager.h"
+#include <fstream>
 
 
 class Engine
@@ -21,9 +22,17 @@ public:
 	{
 
 	}
+	~Engine() 
+	{
+		std::ofstream file("Saved/Profile/number.txt");
+		float result = m_AccumulatedRenderTime / (float)m_ProfileFrameCount;
+		file << result;
+		file.close();
+	}
 
 	void Render(float viewportHeight, float viewportWidth)
 	{
+		m_ProfileFrameCount++;
 		Walnut::Timer timer;
 
 		m_Renderer->OnResize(viewportWidth, viewportHeight);
@@ -32,6 +41,7 @@ public:
 		Renderer* t = m_Renderer.get() ;
 
 		m_LastRenderTime = timer.ElapsedMillis();
+		m_AccumulatedRenderTime += m_LastRenderTime;
 	}
 
 public:
@@ -40,5 +50,7 @@ public:
 	std::shared_ptr<Scene> m_Scene;
 	std::shared_ptr<AssetManager> m_AssetManager;
 	float m_LastRenderTime;
+	float m_AccumulatedRenderTime = 0;
+	int m_ProfileFrameCount = 0;
 };
 

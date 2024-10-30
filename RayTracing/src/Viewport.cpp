@@ -43,7 +43,7 @@ Viewport::Viewport(std::shared_ptr<Engine> inEngine)
 	blueSphere4.Fuzzy = 0.1f;
 	blueSphere4.Type = Material::EType::Metalic;
 
-	/*Material& TestSphere = m_Engine->m_Scene->Materials.emplace_back();
+	Material& TestSphere = m_Engine->m_Scene->Materials.emplace_back();
 	TestSphere.Albedo = { 1.0f, 1.0f, 1.0f };
 	TestSphere.RefactionIndex = 0.99f;
 	TestSphere.Type = Material::EType::Dielectric;
@@ -56,7 +56,7 @@ Viewport::Viewport(std::shared_ptr<Engine> inEngine)
 	Material& TestSphere3 = m_Engine->m_Scene->Materials.emplace_back();
 	TestSphere3.Albedo = { 1.0f, 0.0f, 1.0f };
 	TestSphere3.RefactionIndex = 0.7f;
-	TestSphere3.Type = Material::EType::Dielectric;*/
+	TestSphere3.Type = Material::EType::Dielectric;
 
 	Material& orangeSphere = m_Engine->m_Scene->Materials.emplace_back();
 	orangeSphere.Albedo = { 0.8f, 0.5f, 0.2f };
@@ -114,8 +114,8 @@ Viewport::Viewport(std::shared_ptr<Engine> inEngine)
 	sphere.MaterialIndex = std::distance(m_Engine->m_Scene->Materials.begin(), it);
 	m_Engine->m_Scene->Spheres.push_back(sphere);
 
-	for (int a = -3; a < 3; a++) {
-		for (int b = -3; b < 3; b++) {
+	for (int a = -4; a < 4; a++) {
+		for (int b = -4; b < 4; b++) {
 			glm::vec3 center(1.4f * (float)a + Walnut::Random::Float(), 0.f,  1.4f * (float)b + Walnut::Random::Float());
 			if ((center - glm::vec3(4.f, 0.2f, 0.f)).length() > 0.9f)
 			{
@@ -127,7 +127,8 @@ Viewport::Viewport(std::shared_ptr<Engine> inEngine)
 			}
 		}
 	}
-	for (Sphere& sphere : m_Engine->m_Scene->Spheres)
+	//m_Engine->m_AssetManager->LoadJSON(m_Engine->m_Scene, "Content\\Scenes\\perfomance.json");
+	/*for (Sphere& sphere : m_Engine->m_Scene->Spheres)
 	{
 		sphere.CalcBoundingBox();
 		if (sphere.MaterialIndex < 0 || sphere.MaterialIndex >= m_Engine->m_Scene->Materials.size())
@@ -136,7 +137,7 @@ Viewport::Viewport(std::shared_ptr<Engine> inEngine)
 		}
 	}
 
-	m_Engine->m_Scene->ConstructBVH();
+	m_Engine->m_Scene->ConstructBVH();*/
 }
 
 Viewport::~Viewport()

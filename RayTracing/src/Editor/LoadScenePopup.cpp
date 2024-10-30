@@ -66,5 +66,5 @@ bool ItemGetter(void* data, int index, const char** out_text) {
 
 void LoadScenePopup::DrawContent()
 {
-	ImGui::Combo("Select Option", &m_selectedFileIndex, ItemGetter, &m_locatedFiles, m_locatedFiles.size());
+	ImGui::Combo("File", &m_selectedFileIndex, ItemGetter, &m_locatedFiles, m_locatedFiles.size());
 }
